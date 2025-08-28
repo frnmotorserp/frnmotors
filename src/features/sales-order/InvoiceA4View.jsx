@@ -15,41 +15,41 @@ const tableCellStyle = {
   fontSize: '12px'
 };
 
-const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealerList, customerList}, ref) => {
-     
+const InvoiceA4View = forwardRef(({ salesOrder = {}, items = [], companyList, dealerList, customerList }, ref) => {
 
-  const [companyDetails, setCompanyDetails] =  useState({})
-  const [buyerDetails, setBuyerDetails] =  useState({})
+
+  const [companyDetails, setCompanyDetails] = useState({})
+  const [buyerDetails, setBuyerDetails] = useState({})
 
   useEffect(() => {
-    if(salesOrder && salesOrder?.company_id){
-        let details  = companyList?.find(x =>  x.companyId == salesOrder?.company_id );
-        setCompanyDetails(details || {})
+    if (salesOrder && salesOrder?.company_id) {
+      let details = companyList?.find(x => x.companyId == salesOrder?.company_id);
+      setCompanyDetails(details || {})
     }
-    if(salesOrder && salesOrder?.order_type === "DEALER"){
-        let details  = dealerList?.find(x =>  x.dealerId == salesOrder?.dealer_id );
-        
-       details &&  setBuyerDetails({
-            buyerName :  details.dealerName,
-            phone: details.phone,
-            gstin: details.gstin,
-            pan: details.pan,
-            email: details.email
+    if (salesOrder && salesOrder?.order_type === "DEALER") {
+      let details = dealerList?.find(x => x.dealerId == salesOrder?.dealer_id);
 
-        })
+      details && setBuyerDetails({
+        buyerName: details.dealerName,
+        phone: details.phone,
+        gstin: details.gstin,
+        pan: details.pan,
+        email: details.email
+
+      })
     }
-     if(salesOrder && salesOrder?.order_type === "CUSTOMER"){
-          let details  = customerList?.find(x =>  x.customerId == salesOrder?.customer_id );
-            details &&  setBuyerDetails({
-            buyerName :  details.customerName,
-            phone: details.phone,
-            gstin: details.gstin,
-            pan: details.pan,
-            aadhar: details.aadhar,
-            email: details.email
+    if (salesOrder && salesOrder?.order_type === "CUSTOMER") {
+      let details = customerList?.find(x => x.customerId == salesOrder?.customer_id);
+      details && setBuyerDetails({
+        buyerName: details.customerName,
+        phone: details.phone,
+        gstin: details.gstin,
+        pan: details.pan,
+        aadhar: details.aadhar,
+        email: details.email
 
-        })
-        console.log("DETAILS", details)
+      })
+      console.log("DETAILS", details)
     }
 
   }, [salesOrder])
@@ -71,10 +71,10 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
           <strong>{companyDetails?.businessName || "No Company Found"}</strong>
         </Typography>
         <Typography variant="body2" align="center">
-        {companyDetails?.address  || "No Address Found"},  {companyDetails?.pincode  || "No Pincode Found"}
+          {companyDetails?.address || "No Address Found"},  {companyDetails?.pincode || "No Pincode Found"}
         </Typography>
         <Typography variant="body2" align="center">
-          GSTIN: {companyDetails?.gstin ||  "No GST Found"}
+          GSTIN: {companyDetails?.gstin || "No GST Found"}
         </Typography>
         <Typography variant="body2" align="center">
           Contact: 8653200285
@@ -91,14 +91,14 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
           <Typography variant="subtitle2">
             <strong>Buyer Name:</strong> {buyerDetails?.buyerName || 'N/A'}
           </Typography>
-            {buyerDetails?.aadhar && <Typography variant="body2">
+          {buyerDetails?.aadhar && <Typography variant="body2">
             <strong>Aadhar No.:</strong> {buyerDetails?.aadhar || 'N/A'}
           </Typography>}
 
-           {buyerDetails?.gstin && <Typography variant="body2">
+          {buyerDetails?.gstin && <Typography variant="body2">
             <strong>GST:</strong> {buyerDetails?.gstin || 'N/A'}
           </Typography>}
-          {!buyerDetails?.gstin && buyerDetails?.pan &&    <Typography variant="body2">
+          {!buyerDetails?.gstin && buyerDetails?.pan && <Typography variant="body2">
             <strong>PAN:</strong> {buyerDetails?.pan || 'N/A'}
           </Typography>}
           <Typography variant="body2">
@@ -110,7 +110,7 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
           <Typography variant="body2">
             <strong>Billing Address:</strong> {salesOrder?.billing_address}
           </Typography>
-         
+
         </Box>
         <Box width={'45%'}>
           <Typography variant="body2">
@@ -137,7 +137,7 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
             <TableRow>
               <TableCell sx={tableCellStyle}>#</TableCell>
               <TableCell sx={tableCellStyle}>Product</TableCell>
-              {/* <TableCell sx={tableCellStyle}>HSN</TableCell> */}
+              <TableCell sx={tableCellStyle}>HSN</TableCell>
               <TableCell sx={tableCellStyle}>Qty</TableCell>
               <TableCell sx={tableCellStyle}>Unit Price</TableCell>
               <TableCell sx={tableCellStyle}>Total Discount</TableCell>
@@ -149,18 +149,63 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
             </TableRow>
           </TableHead>
           <TableBody>
-            { Array.isArray(items) && items?.map((item, idx) => (
+            {Array.isArray(items) && items?.map((item, idx) => (
               <TableRow key={idx}>
                 <TableCell sx={tableCellStyle}>{idx + 1}</TableCell>
                 <TableCell sx={tableCellStyle}>
-                <Box display="flex" flexDirection="column">
-                    <Typography> {item.product_name}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      <strong>HSN: </strong> {item.hsn_code || "Not Available"}
-                    </Typography>
+                  <Typography>{item?.productName || item?.product_name || item?.productId}</Typography>
+
+                  {(item.isFinalVeichle || item.is_final_veichle) && (
+                    <Box display="flex" flexDirection="column">
+                      {(item.chasisNo || item.chasis_no) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Chassis No: {item.chasisNo || item.chasis_no}
+                        </Typography>
+                      )}
+                      {(item.motorNo || item.motor_no) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Motor No: {item.motorNo || item.motor_no}
+                        </Typography>
+                      )}
+                      {(item.controllerNo || item.controller_no) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Controller No: {item.controllerNo || item.controller_no}
+                        </Typography>
+                      )}
+                      {(item.charger || item.charger_sl_no) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Charger: {item.charger}
+                          {item.charger && item.charger_sl_no ? " - " : ""}
+                          {item.charger_sl_no}
+                        </Typography>
+                      )}
+                      {(item.productColor || item.product_color) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Color: {item.productColor || item.product_color}
+                        </Typography>
+                      )}
+                      {(item.battery || item.battery_sl_no) && (
+                        <Typography variant="caption" color="text.secondary">
+                          Battery: {item.battery}
+                          {item.battery && item.battery_sl_no ? " - " : ""}
+                          {item.battery_sl_no}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+
+                  <Box>
+                    {( item.serial_no_applicable) &&
+                        <Typography variant="caption" fontWeight={500} color="text.secondary">
+                          Serials: {item.serial_no}
+                        </Typography>
+                      }
                   </Box>
-               </TableCell>
-                {/* <TableCell sx={tableCellStyle}>{item.hsn_code}</TableCell> */}
+                </TableCell>
+
+                <TableCell sx={tableCellStyle}>
+                  <Typography  variant="caption"> {item.hsn_code}</Typography>
+                 </TableCell>
                 <TableCell sx={tableCellStyle}>
                   <Box display="flex" flexDirection="column">
                     <Typography>{Number(item.quantity || 0).toFixed(2)}</Typography>
@@ -220,47 +265,47 @@ const InvoiceA4View = forwardRef(({salesOrder={}, items=[],  companyList, dealer
 
       {/* Summary */}
       <Box display={'flex'} justifyContent={'space-between'}>
-       
-  <Box sx={{ my: 2 }}>
-    <Typography variant="body2" sx={{ mt: 1 }}>
-      <strong>Remarks:</strong> {salesOrder?.remarks || "N/A"}
-    </Typography>
 
-    {/* Transport Details */}
-    {(salesOrder?.distance_km || salesOrder?.vehicle_no || salesOrder?.transport_mode || salesOrder?.transporter_name) && (
-      <Box sx={{ mt: 1 }}>
-         {salesOrder?.shipping_address && <Typography variant="body2">
-            <strong>Shipping Address:</strong> {salesOrder?.shipping_address}
-          </Typography>}
-        {salesOrder?.distance_km && parseInt(salesOrder?.distance_km) != 0 && (
-          <Typography variant="body2">
-            <strong>Distance (km):</strong> {salesOrder.distance_km}
+        <Box sx={{ my: 2 }}>
+          <Typography variant="body2" sx={{ mt: 1 }}>
+            <strong>Remarks:</strong> {salesOrder?.remarks || "N/A"}
           </Typography>
-        )}
-        {salesOrder?.vehicle_no && (
-          <Typography variant="body2">
-            <strong>Vehicle No:</strong> {salesOrder.vehicle_no}
-          </Typography>
-        )}
-        {salesOrder?.transport_mode && (
-          <Typography variant="body2">
-            <strong>Transport Mode:</strong> {salesOrder.transport_mode}
-          </Typography>
-        )}
-        {salesOrder?.transporter_name && (
-          <Typography variant="body2">
-            <strong>Transporter Name:</strong> {salesOrder.transporter_name}
-          </Typography>
-        )}
-      </Box>
-    )}
 
-    <Box sx={{ border: '1px solid black', p: 1, mt: 1, mr: 2 }}>
-      <Typography variant="caption">
-        **This is an electronically generated invoice — no signature required.
-      </Typography>
-    </Box>
-  </Box>
+          {/* Transport Details */}
+          {(salesOrder?.distance_km || salesOrder?.vehicle_no || salesOrder?.transport_mode || salesOrder?.transporter_name) && (
+            <Box sx={{ mt: 1 }}>
+              {salesOrder?.shipping_address && <Typography variant="body2">
+                <strong>Shipping Address:</strong> {salesOrder?.shipping_address}
+              </Typography>}
+              {salesOrder?.distance_km && parseInt(salesOrder?.distance_km) != 0 && (
+                <Typography variant="body2">
+                  <strong>Distance (km):</strong> {salesOrder.distance_km}
+                </Typography>
+              )}
+              {salesOrder?.vehicle_no && (
+                <Typography variant="body2">
+                  <strong>Vehicle No:</strong> {salesOrder.vehicle_no}
+                </Typography>
+              )}
+              {salesOrder?.transport_mode && (
+                <Typography variant="body2">
+                  <strong>Transport Mode:</strong> {salesOrder.transport_mode}
+                </Typography>
+              )}
+              {salesOrder?.transporter_name && (
+                <Typography variant="body2">
+                  <strong>Transporter Name:</strong> {salesOrder.transporter_name}
+                </Typography>
+              )}
+            </Box>
+          )}
+
+          <Box sx={{ border: '1px solid black', p: 1, mt: 1, mr: 2 }}>
+            <Typography variant="caption">
+              **This is an electronically generated invoice — no signature required.
+            </Typography>
+          </Box>
+        </Box>
 
 
         <Box sx={{ ml: 'auto', width: '50%' }}>

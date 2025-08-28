@@ -396,3 +396,36 @@ export async function getYearlySalesReportService(year) {
   });
 }
 
+
+
+// Cancel Sales Order
+export async function cancelSalesOrderService(salesOrderId, cancellationReason) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId
+        },
+        salesOrderId,
+        cancelledBy: userId,
+        cancellationReason: cancellationReason || null
+      };
+
+      const response = await axiosPost('/sales/cancelSalesOrder', requestBody);
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to cancel sales order");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+

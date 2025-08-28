@@ -30,13 +30,14 @@ import { fetchUserListService } from '../services/userServices';
 import SalesOrderCard from '../features/sales-order/SalesOrderCard';
 import ViewDownloadInvoice from '../features/sales-order/ViewDownloadInvoice';
 import PaymentHistoryDialog from '../features/sales-order/PaymentHistoryDialog';
+import CancelSalesOrderDialog from '../features/sales-order/CancelSalesOrderDialog';
 
 
 const getStatusColor = (status) => {
   switch (status) {
     case 'DRAFT': return 'warning';
     case 'CONFIRMED': return 'primary';
-    case 'CANCELED': return 'error';
+    case 'CANCELLED': return 'error';
     default: return 'default';
   }
 };
@@ -44,13 +45,15 @@ const getStatusColor = (status) => {
 const statusTabs = [
   'ALL',
   'CONFIRMED',
-  'CANCELED',
+  'CANCELLED',
 ];
 
 const SalesOrderManangement = () => {
   const { showSnackbar, showLoader, hideLoader } = useUI();
   const [salesList, setSalesList] = useState([]);
   const [customerList, setCustomerList] = useState([]);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
   const [filters, setFilters] = useState({
     customerId: '',
     customerName: '',
@@ -121,7 +124,7 @@ const SalesOrderManangement = () => {
             .join(' ');
           userMap[user.userId] = `${fullName} - ${user.loginId}`;
         });
-        console.log(userMap, "userMap")
+        //console.log(userMap, "userMap")
         setUserIDUserNameMap(userMap)
       }
 
@@ -408,11 +411,18 @@ const SalesOrderManangement = () => {
       .finally(() => hideLoader());
   };
 
-  const handleDialogOpen = (so = null, currMode = 'create') => {
+  const handleCancelOrderDialogOpen = (so = null, currMode = 'create') => {
+    setViewData(so);
+    //setMode(currMode);
+    setCancelDialogOpen(true);
+  };
+
+    const handleDialogOpen = (so = null, currMode = 'create') => {
     setEditData(so);
     setMode(currMode);
     setOpenDialog(true);
   };
+
 
   const handleDialogClose = () => {
     setEditData(null);
@@ -550,7 +560,9 @@ const SalesOrderManangement = () => {
              dealerIDNameMap={dealerIDNameMap} 
              customerIDNameMap={customerIDNameMap} 
              handlePaymentDialogOpen={handlePaymentDialogOpen}
-              handleViewDialogOpen = {handleViewDialogOpen}/>
+             handleViewDialogOpen = {handleViewDialogOpen}
+             handleCancelOrderDialogOpen={handleCancelOrderDialogOpen}
+             />
             ))}
         </Grid>
 
@@ -582,7 +594,22 @@ const SalesOrderManangement = () => {
           dealerList={dealerList || []}
 
         />
-        <PaymentHistoryDialog open={paymentDialogOpen} onClose={handlePaymentDialogClose} salesOrderId={viewData?.sales_order_id} orderAmount={viewData?.grand_total}  salesOrderCode={viewData?.sales_order_code}/>
+
+        <CancelSalesOrderDialog
+        open={cancelDialogOpen}
+        onClose={() => setCancelDialogOpen(false)}
+        salesOrderId={viewData?.sales_order_id}
+        onCancelled={() => {fetchSalesOrders(true)}} 
+        salesOrderCode={viewData?.sales_order_code}
+
+      />
+        <PaymentHistoryDialog open={paymentDialogOpen} 
+        onClose={handlePaymentDialogClose} 
+        salesOrderId={viewData?.sales_order_id} 
+        orderAmount={viewData?.grand_total}  
+        salesOrderCode={viewData?.sales_order_code}
+        orderStatus ={viewData?.status}
+        />
         
       </Box>
     </PageWrapper>

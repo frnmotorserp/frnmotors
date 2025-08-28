@@ -108,7 +108,7 @@ function formatSalesOrderForAPI(data) {
 
 
 const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSuccess, companyList, customerList, stateList, dealerList, locationList, userList }) => {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const { showSnackbar, showLoader, hideLoader } = useUI();
   const [saleableItemsList, setSaleableItemsList] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -143,7 +143,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     igstAmount: 0,
     totalTax: 0,
     grandTotal: 0,
-    status: 'DRAFT',
+    status: 'CONFIRMED',
     paymentStatus: 'UNPAID',
     createdBy: '',
     updatedBy: '',
@@ -162,14 +162,14 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
   const [deliveryApplicable, setDeliveryApplicable] = useState('No');
 
   useEffect(() => {
-  if (orderData.companyStateCode && orderData.billingStateCode) {
-    const taxType = orderData.companyStateCode === orderData.billingStateCode ? 'INTRA' : 'INTER';
-    handleFieldChange('taxType', taxType);
-  }
-  else{
-    handleFieldChange('taxType', null);
-  }
-}, [orderData.companyStateCode, orderData.billingStateCode]);
+    if (orderData.companyStateCode && orderData.billingStateCode) {
+      const taxType = orderData.companyStateCode === orderData.billingStateCode ? 'INTRA' : 'INTER';
+      handleFieldChange('taxType', taxType);
+    }
+    else {
+      handleFieldChange('taxType', null);
+    }
+  }, [orderData.companyStateCode, orderData.billingStateCode]);
 
 
   useEffect(() => {
@@ -203,17 +203,17 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     setOrderData(prev => {
 
       return {
-      ...prev,
-      subtotal,
-      discountAmount,
-      taxableAmount,
-      cgstAmount,
-      sgstAmount,
-      igstAmount,
-      totalTax,
-      grandTotal
+        ...prev,
+        subtotal,
+        discountAmount,
+        taxableAmount,
+        cgstAmount,
+        sgstAmount,
+        igstAmount,
+        totalTax,
+        grandTotal
       }
-      
+
     });
   }, [items]);
 
@@ -232,7 +232,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
 
       // Update the state with the fetched items
       setSaleableItemsList(res || []);
-      
+
       // Show appropriate snackbar message
       !hideSnackbar && showSnackbar(
         res?.length ? 'Saleable items fetched!' : 'No items found for this location.',
@@ -287,7 +287,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
         salesOrderCode: generateOrderCode(),
         orderDate: dayjs().format('YYYY-MM-DD'),
 
-        status: 'DRAFT'
+        status: 'CONFIRMED'
       }));
       setItems([]);
     }
@@ -302,76 +302,149 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     console.log("orderData:", orderData)
     console.log("items:", items)
 
+    let errors = [];
+
+    // Validation rules
     if (!orderData.customerId && !orderData.dealerId) {
-      showSnackbar('Customer or Dealer is required!', 'error');
+      errors.push("Customer or Dealer is required!");
+    }
+
+    if (!orderData.companyId) {
+      errors.push("Company must be selected!");
+    }
+
+    if (!orderData.billingAddress) {
+      errors.push("Billing address is required!");
+    }
+
+    if (!items || items.length === 0) {
+      errors.push("At least one product must be added!");
+    }
+
+    // Group items by productId
+    const grouped = {};
+    for (const item of items) {
+      if (!grouped[item.productId]) {
+        grouped[item.productId] = {  qty: 0, serials: [] };
+      }
+      grouped[item.productId].qty += Number(item.quantity);
+      let allSerials = item.serialNumbers?.map(x => x.serial_number) || [];
+      if (allSerials?.length > 0) {
+        grouped[item.productId].serials.push(...allSerials);
+      }
+    }
+
+    // Check validations
+    for (const productId in grouped) {
+      const stock = saleableItemsList?.find(s => s.productId == productId);
+      if (!stock) {
+        errors.push(`Product ${productId} not found in stock`);
+        continue;
+      }
+
+      // 1. Quantity check
+      if (grouped[productId].qty > Number(stock.availableQuantity)) {
+        errors.push(
+          `Product ${stock.productName}: Ordered qty ${grouped[productId].qty} exceeds available ${stock.availableQuantity}`
+        );
+      }
+
+      // 2. Serial duplicate check
+      if (stock.serialNoApplicable) {
+        const serials = grouped[productId].serials;
+        const dupes = serials.filter((s, i) => serials.indexOf(s) !== i);
+        if (dupes.length > 0) {
+          errors.push(`Product ${stock.productName}: Duplicate serials ${[...new Set(dupes)].join(", ")}`);
+        }
+      }
+    }
+
+    // If errors exist → show them and stop
+    if (errors.length > 0) {
+      showSnackbar(errors, "error"); // You can also format with "\n" for multi-line
       return;
     }
+
+
     let formatedOrderDataForAPI = {
-      salesOrderId: parseInt(orderData?.salesOrderCode || null) ,
-      salesOrderCode: orderData?.salesOrderCode || null ,
-      orderDate:   orderData?.orderDate || null,
+      salesOrderId: parseInt(orderData?.salesOrderCode || null),
+      salesOrderCode: orderData?.salesOrderCode || null,
+      orderDate: orderData?.orderDate || null,
       orderType: orderData?.orderType || null,
-      expectedDeliveryDate: orderData?.expectedDeliveryDate || null ,
+      expectedDeliveryDate: orderData?.expectedDeliveryDate || null,
       dispatchMode: orderData?.dispatchMode || null,
-      bookedByUserId: parseInt(orderData?.bookedByUserId) || null  ,
-      customerId: parseInt(orderData?.customerId) || null  ,
-      dealerId: parseInt(orderData?.dealerId) || null  ,
-      companyId: parseInt(orderData?.companyId) || null ,
+      bookedByUserId: parseInt(orderData?.bookedByUserId) || null,
+      customerId: parseInt(orderData?.customerId) || null,
+      dealerId: parseInt(orderData?.dealerId) || null,
+      companyId: parseInt(orderData?.companyId) || null,
       companyAddress: orderData?.companyAddress || null,
       billingAddress: orderData?.billingAddress || null,
-      shippingAddress: orderData?.shippingAddress || null ,
-      companyStateCode: parseInt(orderData?.companyStateCode) || null ,
-      billingStateCode:  parseInt(orderData?.billingStateCode) || null ,
-      shippingStateCode: parseInt(orderData?.shippingStateCode) || null ,
-      transportMode: orderData?.transportMode || null  ,
-      distanceKm: parseFloat(orderData?.distanceKm || 0) ,
-      paymentTerms: orderData?.paymentTerms || null  ,
-      remarks: orderData?.remarks || null ,
-      subtotal:  parseFloat(orderData?.subtotal || 0 ),
-      discountAmount:  parseFloat(orderData?.discountAmount || 0 ) ,
-      taxableAmount:  parseFloat(orderData?.taxableAmount || 0 ) ,
-      taxType:  orderData?.taxType || null,
-      cgstAmount: parseFloat(orderData?.cgstAmount || 0 )  ,
-      sgstAmount: parseFloat(orderData?.sgstAmount || 0 )  ,
-      igstAmount: parseFloat(orderData?.igstAmount || 0 ) ,
-      totalTax: parseFloat(orderData?.totalTax || 0 ) ,
-      grandTotal: parseFloat(orderData?.grandTotal || 0 ) ,
+      shippingAddress: orderData?.shippingAddress || null,
+      companyStateCode: parseInt(orderData?.companyStateCode) || null,
+      billingStateCode: parseInt(orderData?.billingStateCode) || null,
+      shippingStateCode: parseInt(orderData?.shippingStateCode) || null,
+      transportMode: orderData?.transportMode || null,
+      distanceKm: parseFloat(orderData?.distanceKm || 0),
+      paymentTerms: orderData?.paymentTerms || null,
+      remarks: orderData?.remarks || null,
+      subtotal: parseFloat(orderData?.subtotal || 0),
+      discountAmount: parseFloat(orderData?.discountAmount || 0),
+      taxableAmount: parseFloat(orderData?.taxableAmount || 0),
+      taxType: orderData?.taxType || null,
+      cgstAmount: parseFloat(orderData?.cgstAmount || 0),
+      sgstAmount: parseFloat(orderData?.sgstAmount || 0),
+      igstAmount: parseFloat(orderData?.igstAmount || 0),
+      totalTax: parseFloat(orderData?.totalTax || 0),
+      grandTotal: parseFloat(orderData?.grandTotal || 0),
       status: orderData?.status || null,
       paymentStatus: orderData?.paymentStatus || null,
       salesLocationId: orderData?.salesLocationId || null,
       createdBy: null,
-      updatedBy: null ,
+      updatedBy: null,
       irn: orderData?.irn || null,
       ackNo: orderData?.ackNo || null,
-      ackDate: orderData?.ackDate || null ,
-      signedQrCode: orderData?.signedQrCode || null ,
-      cancelledAt: orderData?.cancelledAt || null ,
-      cancellationReason: orderData?.cancellationReason || null ,
-      transporterName: orderData?.transporterName || null ,
-      vehicleNo: orderData?.vehicleNo || null 
+      ackDate: orderData?.ackDate || null,
+      signedQrCode: orderData?.signedQrCode || null,
+      cancelledAt: orderData?.cancelledAt || null,
+      cancellationReason: orderData?.cancellationReason || null,
+      transporterName: orderData?.transporterName || null,
+      vehicleNo: orderData?.vehicleNo || null
     }
 
-    let convertItemsForAPI = items.map(item => ({
-        productId: item.productId,
-        hsnCode: item.hsnCode,
-        uom: item.uom,
-        batchNo: null, // no data in source, so null
-        serialNo: null, // no data in source, so null
-        quantity: parseFloat(item.quantity) || 0,
-        unitPrice: parseFloat(item.unitPrice) || 0,
-        discount: parseFloat(item.discountAmount) || 0,
-        taxableValue: (parseFloat(item.unitPrice) * parseFloat(item.quantity)) - (parseFloat(item.discountAmount) || 0),
-        cgstPercentage: parseFloat(item.cgstPercent) || 0,
-        cgstAmount: parseFloat(item.cgstAmount) || 0,
-        sgstPercentage: parseFloat(item.sgstPercent) || 0,
-        sgstAmount: parseFloat(item.sgstAmount) || 0,
-        igstPercentage: parseFloat(item.igstPercent) || 0,
-        igstAmount: parseFloat(item.igstAmount) || 0,
-        lineTotal: parseFloat(item.totalAmount) || 0,
-        discountPercentage: parseFloat(item.discountPercent) || 0
-      }));
+    let convertItemsForAPI = items?.map(item => ({
+      productId: item.productId,
+      hsnCode: item.hsnCode,
+      uom: item.uom,
+      batchNo: null, // no data in source, so null
+      //serialNo: null, 
+      quantity: parseFloat(item.quantity) || 0,
+      unitPrice: parseFloat(item.unitPrice) || 0,
+      discount: parseFloat(item.discountAmount) || 0,
+      taxableValue: (parseFloat(item.unitPrice) * parseFloat(item.quantity)) - (parseFloat(item.discountAmount) || 0),
+      cgstPercentage: parseFloat(item.cgstPercent) || 0,
+      cgstAmount: parseFloat(item.cgstAmount) || 0,
+      sgstPercentage: parseFloat(item.sgstPercent) || 0,
+      sgstAmount: parseFloat(item.sgstAmount) || 0,
+      igstPercentage: parseFloat(item.igstPercent) || 0,
+      igstAmount: parseFloat(item.igstAmount) || 0,
+      lineTotal: parseFloat(item.totalAmount) || 0,
+      discountPercentage: parseFloat(item.discountPercent) || 0,
+      serialNo: item.serialNoApplicable ? item.serialNumbers?.map(s => s.serial_number)?.join(", ") : null,
+      productSerialIds: item.serialNumbers?.map(s => s.id) || [],
+      serialNoApplicable: item.serialNoApplicable || false,
+      chasisNo: item?.chasisNo || null,
+      motorNo: item?.motorNo || null,
+      controllerNo: item?.controllerNo || null,
 
-  
+      productColor: item?.productColor || null,
+
+      charger: item?.charger || null,
+      chargerSlNo: item?.chargerSlNo || null,
+      battery: item?.battery || null,
+      batterySlNo: item?.batterySlNo || null,
+    }));
+
+
     showLoader();
     saveOrUpdateSalesOrderService(formatedOrderDataForAPI, convertItemsForAPI)
       .then(() => {
@@ -547,7 +620,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                     startIcon={<AddIcon />}
                     fullWidth
                     onClick={() => {
-                     navigate('/dealer-customer/customerManagement')
+                      navigate('/dealer-customer/customerManagement')
                     }}
                   >
                     Add
@@ -1092,9 +1165,9 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
               label="Sales Point"
               name="salesLocationId"
               value={orderData?.salesLocationId}
-              onChange={(e) => { 
+              onChange={(e) => {
                 handleFieldChange('salesLocationId', e.target.value)
-                 e.target.value && fetchAvailableSaleableItems( e.target.value)
+                e.target.value && fetchAvailableSaleableItems(e.target.value)
               }}
             >
               {locationList?.map((loc) => (
@@ -1164,41 +1237,41 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
           </Grid>}
 
 
-          {(orderData?.customerId || orderData?.dealerId) &&<Grid item xs={12} md={12}>
-          <FormLabel component="legend" sx={{ fontSize: 12, mb: 1 }}>Tax Type (Auto Calculated)</FormLabel>
-          <ToggleButtonGroup
-            color="primary"
-            value={orderData.taxType}
-            exclusive
-            fullWidth
-            sx={{
-              '& .MuiToggleButton-root': {
-                textTransform: 'none',
-                fontWeight: 600,
-                border: '1px solid rgba(0,0,0,0.15)',
-                flex: 1,
-                py: 1,
-                transition: '0.3s',
-              },
-              '& .Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: '#fff',
-                '&:hover': {
-                  backgroundColor: 'primary.dark'
+          {(orderData?.customerId || orderData?.dealerId) && <Grid item xs={12} md={12}>
+            <FormLabel component="legend" sx={{ fontSize: 12, mb: 1 }}>Tax Type (Auto Calculated)</FormLabel>
+            <ToggleButtonGroup
+              color="primary"
+              value={orderData.taxType}
+              exclusive
+              fullWidth
+              sx={{
+                '& .MuiToggleButton-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  border: '1px solid rgba(0,0,0,0.15)',
+                  flex: 1,
+                  py: 1,
+                  transition: '0.3s',
+                },
+                '& .Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: '#fff',
+                  '&:hover': {
+                    backgroundColor: 'primary.dark'
+                  }
                 }
-              }
-            }}
-          >
-            <ToggleButton value="INTRA" disabled>CGST + SGST</ToggleButton>
-            <ToggleButton value="INTER" disabled>IGST</ToggleButton>
-       
-          </ToggleButtonGroup>
-               <Typography variant="caption" sx={{ color: 'error.main', mt: 1, ml: 1 }}>
-               <strong>Note:</strong> Provide both the <strong>Company</strong> and the <strong>Customer's or Dealer's Billing Address with State</strong> to auto-calculate the Tax Type.
-            </Typography>
-        </Grid>}
+              }}
+            >
+              <ToggleButton value="INTRA" disabled>CGST + SGST</ToggleButton>
+              <ToggleButton value="INTER" disabled>IGST</ToggleButton>
 
-        <Grid item xs={12} md={12}>
+            </ToggleButtonGroup>
+            <Typography variant="caption" sx={{ color: 'error.main', mt: 1, ml: 1 }}>
+              <strong>Note:</strong> Provide both the <strong>Company</strong> and the <strong>Customer's or Dealer's Billing Address with State</strong> to auto-calculate the Tax Type.
+            </Typography>
+          </Grid>}
+
+          <Grid item xs={12} md={12}>
             <TextField
               multiline
               minRows={3}
@@ -1207,60 +1280,60 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
               label="Remarks"
               name="remarks"
               value={orderData?.remarks}
-              onChange={(e) => { 
+              onChange={(e) => {
                 handleFieldChange('remarks', e.target.value)
               }}
             ></TextField>
 
 
-        </Grid>
+          </Grid>
 
 
         </Grid>
 
 
 
-       { (orderData?.salesLocationId &&  saleableItemsList?.length>0 && orderData?.taxType ) ? 
-       <>
-        <SalesOrderItemManager productList = {saleableItemsList || []} taxType={orderData?.taxType || []} poItems = {items} setPoItems={setItems} />
-       <OrderSummary orderData={orderData || {}} />
-       </>
-      
-        : <Alert
-      severity="warning"
-      sx={{
-        mt:2,
-        mb: 2,
-        borderRadius: 2,
-        backgroundColor: '#fff8e1',
-        border: '1px solid #ffe082',
-        color: '#795548',
-        fontWeight: 500
-      }}
-    >
-      <AlertTitle>Action Required</AlertTitle>
+        {(orderData?.salesLocationId && saleableItemsList?.length > 0 && orderData?.taxType) ?
+          <>
+            <SalesOrderItemManager locationId={orderData?.salesLocationId} productList={saleableItemsList || []} taxType={orderData?.taxType || []} poItems={items} setPoItems={setItems} />
+            <OrderSummary orderData={orderData || {}} />
+          </>
 
-      {!orderData?.salesLocationId && (
-        <div>📍 Please select a <strong>Location</strong> you are selling form.</div>
-      )}
+          : <Alert
+            severity="warning"
+            sx={{
+              mt: 2,
+              mb: 2,
+              borderRadius: 2,
+              backgroundColor: '#fff8e1',
+              border: '1px solid #ffe082',
+              color: '#795548',
+              fontWeight: 500
+            }}
+          >
+            <AlertTitle>Action Required</AlertTitle>
 
-      {orderData?.salesLocationId && !saleableItemsList?.length && (
-        <div>🚫 No saleable products available for the selected location.</div>
-      )}
+            {!orderData?.salesLocationId && (
+              <div>📍 Please select a <strong>Location</strong> you are selling form.</div>
+            )}
 
-      {!orderData?.taxType && (
-        <div>
-          🧾 Tax type not calculated — please select the <strong>Company</strong> and
-          <strong> Billing Address</strong> of the Customer/Dealer to get the tax type.
-        </div>
-      )}
+            {orderData?.salesLocationId && !saleableItemsList?.length && (
+              <div>🚫 No saleable products available for the selected location.</div>
+            )}
 
-      <div style={{ marginTop: 6, fontStyle: 'italic', fontSize: '0.85em' }}>
-        Once all the above are resolved, you can add order items.
-      </div>
-    </Alert>  
-      }
-      
+            {!orderData?.taxType && (
+              <div>
+                🧾 Tax type not calculated — please select the <strong>Company</strong> and
+                <strong> Billing Address</strong> of the Customer/Dealer to get the tax type.
+              </div>
+            )}
+
+            <div style={{ marginTop: 6, fontStyle: 'italic', fontSize: '0.85em' }}>
+              Once all the above are resolved, you can add order items.
+            </div>
+          </Alert>
+        }
+
 
 
       </DialogContent>

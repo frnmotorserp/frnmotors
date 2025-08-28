@@ -116,10 +116,10 @@ const SerialNumberDialog = ({ open, onClose, product }) => {
                   </Box>
 
                   <Typography variant="body2" color="text.secondary">
-                    Added: {dayjs(serial.added_date).format("DD MMM YYYY, hh:mm A")}
+                    Added: {dayjs(serial.added_date).add(5.5, "hour").format("DD MMM YYYY, hh:mm A")}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Last Updated: {dayjs(serial.last_updated).format("DD MMM YYYY, hh:mm A")}
+                    Last Updated: {dayjs(serial.last_updated).add(5.5, "hour").format("DD MMM YYYY, hh:mm A")}
                   </Typography>
                 </Paper>
               ))}
@@ -162,10 +162,10 @@ const SerialNumberDialog = ({ open, onClose, product }) => {
                   </Box>
 
                   <Typography variant="body2" color="text.secondary">
-                    Added: {dayjs(serial.added_date).format("DD MMM YYYY, hh:mm A")}
+                    Added: {dayjs(serial.added_date).add(5.5, "hour").format("DD MMM YYYY, hh:mm A")}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Last Updated: {dayjs(serial.last_updated).format("DD MMM YYYY, hh:mm A")}
+                    Last Updated: {dayjs(serial.last_updated).add(5.5, "hour").format("DD MMM YYYY, hh:mm A")}
                   </Typography>
                 </Paper>
               ))}

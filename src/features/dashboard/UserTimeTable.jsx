@@ -166,7 +166,7 @@ function UserTimeTable({ userTimeList, fetchUserTimeSpentData }) {
           <TableRow sx={{ backgroundColor: "lightgreen" }}>
             <TableCell sx={{ fontWeight: "bold" }}>Total</TableCell>
             <TableCell sx={{ fontWeight: "bold" }}>
-              {formatTime(userDailyData.reduce((sum, r) => Number(sum) + Number(r.total_minutes_spent), 0) || 0)}
+              {formatTime(userDailyData.reduce((sum, r) => Number(sum) + Number(r.total_minutes_spent), 0)?.toFixed(2) || 0)}
             </TableCell>
           </TableRow>
           <TableRow sx={{ backgroundColor: "lightyellow" }}>

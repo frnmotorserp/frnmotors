@@ -45,7 +45,8 @@ export default function PaymentHistoryDialog({
   salesOrderId,
   orderAmount = 0,
   currentUserId = 0,
-  salesOrderCode = ""
+  salesOrderCode = "",
+  orderStatus
 }) {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -238,13 +239,13 @@ export default function PaymentHistoryDialog({
 
 
           <Stack direction="row" justifyContent="flex-end" mb={2}>
-            <Button
+            {orderStatus !== "CANCELLED" && <Button
               variant="contained"
               startIcon={<Add />}
               onClick={handleAdd}
             >
               Add Payment
-            </Button>
+            </Button>}
           </Stack>
           {loading ? (
             <Typography>Loading...</Typography>

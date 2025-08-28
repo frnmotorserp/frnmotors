@@ -72,12 +72,12 @@ export default function DashboardSummaryPage() {
 
   const todayChange =
     summaryData &&
-    getChange(summaryData.today.totalOrders, summaryData.yesterday.totalOrders);
+    getChange(summaryData.today.totalOrderValue, summaryData.yesterday.totalOrderValue);
   const monthChange =
     summaryData &&
     getChange(
-      summaryData.thisMonth.totalOrders,
-      summaryData.prevMonth.totalOrders
+      summaryData.thisMonth.totalOrderValue,
+      summaryData.prevMonth.totalOrderValue
     );
 
   // Skeleton Loader (grid with placeholder cards)

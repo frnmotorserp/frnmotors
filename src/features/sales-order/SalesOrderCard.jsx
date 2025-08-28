@@ -4,6 +4,8 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Button from '@mui/material/Button';
+import DisabledByDefaultIcon from '@mui/icons-material/DisabledByDefault';
+import dayjs from "dayjs";
 
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -68,7 +70,7 @@ const getPaymentStatusChip = (status) => {
   }
 };
 
-const SalesOrderCard = ({ o, index, getStatusColor,handlePaymentDialogOpen, userIDUserNameMap, customerIDNameMap, dealerIDNameMap, fetchSalesOrderItems, handleViewDialogOpen }) => {
+const SalesOrderCard = ({ o, index, getStatusColor,handlePaymentDialogOpen, userIDUserNameMap, customerIDNameMap, dealerIDNameMap, fetchSalesOrderItems, handleViewDialogOpen, handleCancelOrderDialogOpen  }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -143,6 +145,10 @@ const SalesOrderCard = ({ o, index, getStatusColor,handlePaymentDialogOpen, user
           </Box>
         </CardContent>
         <CardActions sx={{display: 'flex', justifyContent: 'flex-end'}}>
+             {o.status !== "CANCELLED" && 
+                dayjs().isBefore(dayjs(o.created_at).add(3, "day"))  && <Button variant="outlined" color="error" startIcon={<DisabledByDefaultIcon size= 'small' />} onClick={()=> { handleCancelOrderDialogOpen(o)}}>
+                Cancel
+            </Button>}
              <Button variant="outlined" startIcon={<AccountBalanceIcon size= 'small' />} onClick={()=> { handlePaymentDialogOpen(o)}}>
                 Payments
             </Button>
