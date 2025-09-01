@@ -5,6 +5,7 @@ import {
   Card, CardContent, Divider, IconButton, Tooltip, FormControl, Alert, AlertTitle
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import FiberPinIcon from '@mui/icons-material/FiberPin';
 import dayjs from 'dayjs';
 import { useUI } from '../../context/UIContext';
 import { useNavigate } from 'react-router-dom';
@@ -154,7 +155,9 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     cancelledAt: '',
     cancellationReason: '',
     transporterName: '',
-    vehicleNo: ''
+    vehicleNo: '',
+    billingPincode: '',
+    shippingPincode: ''
   });
 
   const [items, setItems] = useState([]);
@@ -281,7 +284,8 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
       setOrderData(prev => ({ ...prev, ...editData }));
       setItems(editData.sales_items || []);
     } else {
-      setOrderData(prev => ({
+      if(open){
+          setOrderData(prev => ({
         ...prev,
         salesOrderId: null,
         salesOrderCode: generateOrderCode(),
@@ -290,8 +294,11 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
         status: 'CONFIRMED'
       }));
       setItems([]);
+        
+      }
+    
     }
-  }, [mode, editData]);
+  }, [mode, editData, open]);
 
   const handleFieldChange = (key, value) => {
     setOrderData(prev => ({ ...prev, [key]: value }));
@@ -312,9 +319,26 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     if (!orderData.companyId) {
       errors.push("Company must be selected!");
     }
+    if (deliveryApplicable === 'Yes' && !orderData.shippingAddress) {
+      errors.push("Shipping address is required!");
+    }
+    if (deliveryApplicable === 'Yes' && !orderData.shippingPincode) {
+      errors.push("Shipping pincode is required!");
+    }
+    if (deliveryApplicable === 'Yes' && !orderData.shippingStateCode) {
+      errors.push("Shipping state is required!");
+    }
 
     if (!orderData.billingAddress) {
       errors.push("Billing address is required!");
+    }
+
+    if (!orderData.billingPincode) {
+      errors.push("Billing Pincode is required!");
+    }
+
+    if (!orderData.billingStateCode) {
+      errors.push("Billing State is required!");
     }
 
     if (!items || items.length === 0) {
@@ -325,7 +349,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
     const grouped = {};
     for (const item of items) {
       if (!grouped[item.productId]) {
-        grouped[item.productId] = {  qty: 0, serials: [] };
+        grouped[item.productId] = { qty: 0, serials: [] };
       }
       grouped[item.productId].qty += Number(item.quantity);
       let allSerials = item.serialNumbers?.map(x => x.serial_number) || [];
@@ -367,7 +391,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
 
 
     let formatedOrderDataForAPI = {
-      salesOrderId: parseInt(orderData?.salesOrderCode || null),
+      salesOrderId: parseInt(orderData?.salesOrderId || null),
       salesOrderCode: orderData?.salesOrderCode || null,
       orderDate: orderData?.orderDate || null,
       orderType: orderData?.orderType || null,
@@ -408,7 +432,9 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
       cancelledAt: orderData?.cancelledAt || null,
       cancellationReason: orderData?.cancellationReason || null,
       transporterName: orderData?.transporterName || null,
-      vehicleNo: orderData?.vehicleNo || null
+      vehicleNo: orderData?.vehicleNo || null,
+      shippingPincode: orderData?.shippingPincode || null,
+      billingPincode: orderData?.billingPincode || null
     }
 
     let convertItemsForAPI = items?.map(item => ({
@@ -451,6 +477,54 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
         showSnackbar('Sales Order saved successfully!', 'success');
         handleClose();
         onSuccess && onSuccess();
+        setOrderData(
+          {
+            salesOrderId: null,
+            salesOrderCode: '',
+            orderDate: dayjs().format('YYYY-MM-DD') || null,
+            orderType: '',
+            expectedDeliveryDate: null,
+            dispatchMode: '',
+            bookedByUserId: '',
+            customerId: '',
+            dealerId: '',
+            companyId: '',
+            salesLocationId: '',
+            companyAddress: '',
+            billingAddress: '',
+            shippingAddress: '',
+            companyStateCode: '',
+            billingStateCode: '',
+            shippingStateCode: '',
+            transportMode: '',
+            distanceKm: '',
+            paymentTerms: '',
+            remarks: '',
+            subtotal: 0,
+            discountAmount: 0,
+            taxableAmount: 0,
+            taxType: '',
+            cgstAmount: 0,
+            sgstAmount: 0,
+            igstAmount: 0,
+            totalTax: 0,
+            grandTotal: 0,
+            status: 'CONFIRMED',
+            paymentStatus: 'UNPAID',
+            createdBy: '',
+            updatedBy: '',
+            irn: '',
+            ackNo: '',
+            ackDate: '',
+            signedQrCode: '',
+            cancelledAt: '',
+            cancellationReason: '',
+            transporterName: '',
+            vehicleNo: '',
+            billingPincode: '',
+            shippingPincode: ''
+          }
+        )
       })
       .catch(err => {
         console.error('Failed to save sales order:', err);
@@ -561,6 +635,8 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                 handleFieldChange('shippingAddress', '');
                 handleFieldChange('shippingStateCode', '');
                 handleFieldChange('billingAddress', '');
+                handleFieldChange('shippingPincode', '');
+                handleFieldChange('billingPincode', '');
 
               }}
               fullWidth
@@ -728,6 +804,17 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                   sx={{ mb: 2 }}
                 />
                 <TextField
+                  label="Billing Pincode"
+                  value={orderData.billingPincode}
+                  onChange={(e) => handleFieldChange('billingPincode', e.target.value)}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  size="small"
+                  InputProps={{
+                    startAdornment: <FiberPinIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                />
+                <TextField
                   select
                   label="Billing State"
                   value={orderData.billingStateCode}
@@ -773,6 +860,20 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                   size="small"
                   sx={{ mb: 2 }}
                 />
+
+
+                <TextField
+
+                  label="Shipping Pincode"
+                  value={orderData.shippingPincode}
+                  onChange={(e) => handleFieldChange('shippingPincode', e.target.value)}
+                  fullWidth
+                  size="small"
+                  sx={{ mb: 2 }}
+                  InputProps={{
+                    startAdornment: <FiberPinIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                ></TextField>
                 <TextField
                   select
                   label="Shipping State"
@@ -997,6 +1098,18 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                   sx={{ mb: 2 }}
                 />
                 <TextField
+                  label="Billing Pincode"
+                  value={orderData.billingPincode}
+                  onChange={(e) => handleFieldChange('billingPincode', e.target.value)}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  size="small"
+                  InputProps={{
+                    startAdornment: <FiberPinIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                />
+
+                <TextField
                   select
                   label="Billing State"
                   value={orderData.billingStateCode}
@@ -1043,6 +1156,18 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                   size="small"
                   sx={{ mb: 2 }}
                 />
+                <TextField
+
+                  label="Shipping Pincode"
+                  value={orderData.shippingPincode}
+                  onChange={(e) => handleFieldChange('shippingPincode', e.target.value)}
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    startAdornment: <FiberPinIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+                  }}
+                  sx={{ mb: 2 }}
+                ></TextField>
                 <TextField
                   select
                   label="Shipping State"
@@ -1139,6 +1264,7 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
                       console.log("e.target.value", e.target.value)
                       handleFieldChange('shippingAddress', '');
                       handleFieldChange('shippingStateCode', '');
+                      handleFieldChange('shippingPincode', '');
                       handleFieldChange('vehicleNo', '');
                       handleFieldChange('transporterName', '');
                       handleFieldChange('distanceKm', '');
@@ -1339,7 +1465,57 @@ const CreateOrEditSalesOrderForm = ({ open, handleClose, mode, editData, onSucce
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>Cancel</Button>
+        <Button onClick={() => {
+          handleClose()
+          setOrderData(
+            {
+              salesOrderId: null,
+              salesOrderCode: '',
+              orderDate: dayjs().format('YYYY-MM-DD') || null,
+              orderType: '',
+              expectedDeliveryDate: null,
+              dispatchMode: '',
+              bookedByUserId: '',
+              customerId: '',
+              dealerId: '',
+              companyId: '',
+              salesLocationId: '',
+              companyAddress: '',
+              billingAddress: '',
+              shippingAddress: '',
+              companyStateCode: '',
+              billingStateCode: '',
+              shippingStateCode: '',
+              transportMode: '',
+              distanceKm: '',
+              paymentTerms: '',
+              remarks: '',
+              subtotal: 0,
+              discountAmount: 0,
+              taxableAmount: 0,
+              taxType: '',
+              cgstAmount: 0,
+              sgstAmount: 0,
+              igstAmount: 0,
+              totalTax: 0,
+              grandTotal: 0,
+              status: 'CONFIRMED',
+              paymentStatus: 'UNPAID',
+              createdBy: '',
+              updatedBy: '',
+              irn: '',
+              ackNo: '',
+              ackDate: '',
+              signedQrCode: '',
+              cancelledAt: '',
+              cancellationReason: '',
+              transporterName: '',
+              vehicleNo: '',
+              billingPincode: '',
+              shippingPincode: ''
+            }
+          )
+        }}>Cancel</Button>
         <Button variant="contained" onClick={handleSave}>
           {mode === 'edit' ? 'Update' : 'Save'}
         </Button>

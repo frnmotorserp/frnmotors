@@ -31,7 +31,7 @@ import SalesOrderCard from '../features/sales-order/SalesOrderCard';
 import ViewDownloadInvoice from '../features/sales-order/ViewDownloadInvoice';
 import PaymentHistoryDialog from '../features/sales-order/PaymentHistoryDialog';
 import CancelSalesOrderDialog from '../features/sales-order/CancelSalesOrderDialog';
-
+import { generateEInvoiceJSONService } from '../services/salesService';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -79,6 +79,32 @@ const SalesOrderManangement = () => {
   const [userList, setUserList] = useState([]);
   const [salesOrderItems, setSalesOrderItems] = useState([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+
+
+  async function handleDownloadEInvoice(salesOrderId, salesOrderCode) {
+  try {
+    showLoader()
+    const einvoiceJson = await generateEInvoiceJSONService(salesOrderId);
+
+    // Convert to downloadable JSON file
+    const blob = new Blob([JSON.stringify(einvoiceJson, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `EInvoice_${salesOrderCode}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+     showSnackbar("E-Invoice JSON generated successfully!", "success")
+  } catch (error) {
+    showSnackbar("Error generating E-Invoice JSON!", "error")
+    console.error("Error generating E-Invoice JSON:", error);
+  } finally {
+    hideLoader()
+  }
+}
 
 
 
@@ -562,6 +588,7 @@ const SalesOrderManangement = () => {
              handlePaymentDialogOpen={handlePaymentDialogOpen}
              handleViewDialogOpen = {handleViewDialogOpen}
              handleCancelOrderDialogOpen={handleCancelOrderDialogOpen}
+             handleDownloadEInvoice={handleDownloadEInvoice}
              />
             ))}
         </Grid>

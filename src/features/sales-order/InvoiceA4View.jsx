@@ -108,7 +108,9 @@ const InvoiceA4View = forwardRef(({ salesOrder = {}, items = [], companyList, de
             <strong>Email:</strong> {buyerDetails?.email || 'N/A'}
           </Typography>}
           <Typography variant="body2">
-            <strong>Billing Address:</strong> {salesOrder?.billing_address}
+            <strong>Billing Address:</strong> {salesOrder?.billing_address}, PIN: {
+              salesOrder.billing_pincode
+            }
           </Typography>
 
         </Box>

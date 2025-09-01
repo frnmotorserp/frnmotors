@@ -429,3 +429,34 @@ export async function cancelSalesOrderService(salesOrderId, cancellationReason) 
   });
 }
 
+
+
+// Generate E-Invoice JSON
+export async function generateEInvoiceJSONService(salesOrderId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId
+        },
+        salesOrderId
+      };
+
+      const response = await axiosPost('/sales/generateEInvoiceJSON', requestBody);
+
+      if (response?.status && response?.data?.status) {
+        // This will contain the generated JSON schema
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to generate E-Invoice JSON");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

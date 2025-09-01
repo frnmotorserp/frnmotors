@@ -94,7 +94,7 @@ export default function NavBar({ setOpenSidebar, logOut }) {
       open={isMobileMenuOpen}
       onClose={handleMobileMenuClose}
     >
-      <MenuItem>
+      {/* <MenuItem>
         <IconButton size="small" color="inherit">
           <Badge badgeContent={4} color="error">
             <AssignmentTurnedInIcon fontSize="small" />
@@ -109,7 +109,7 @@ export default function NavBar({ setOpenSidebar, logOut }) {
           </Badge>
         </IconButton>
         <Typography variant="caption" sx={{ ml: 1 }}>Notifications</Typography>
-      </MenuItem>
+      </MenuItem> */}
       <MenuItem onClick={handleProfileMenuOpen}>
         <IconButton size="small" color="inherit">
           <AccountCircle fontSize="small" />
@@ -167,7 +167,7 @@ export default function NavBar({ setOpenSidebar, logOut }) {
           <Box sx={{ flexGrow: 1 }} />
 
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
-            <IconButton size="small" color="inherit">
+            {/* <IconButton size="small" color="inherit">
               <Badge badgeContent={4} color="error">
                 <AssignmentTurnedInIcon fontSize="small" />
               </Badge>
@@ -176,7 +176,7 @@ export default function NavBar({ setOpenSidebar, logOut }) {
               <Badge badgeContent={17} color="error">
                 <NotificationsIcon fontSize="small" />
               </Badge>
-            </IconButton>
+            </IconButton> */}
             <IconButton size="small" edge="end" onClick={handleProfileMenuOpen} color="inherit">
               <AccountCircle fontSize="small" />
             </IconButton>

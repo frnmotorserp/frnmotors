@@ -22,6 +22,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import ErrorIcon from "@mui/icons-material/Error";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
 
 // Helper to get chip style by status
@@ -70,7 +71,7 @@ const getPaymentStatusChip = (status) => {
   }
 };
 
-const SalesOrderCard = ({ o, index, getStatusColor,handlePaymentDialogOpen, userIDUserNameMap, customerIDNameMap, dealerIDNameMap, fetchSalesOrderItems, handleViewDialogOpen, handleCancelOrderDialogOpen  }) => {
+const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, handlePaymentDialogOpen, userIDUserNameMap, customerIDNameMap, dealerIDNameMap, fetchSalesOrderItems, handleViewDialogOpen, handleCancelOrderDialogOpen  }) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -144,18 +145,27 @@ const SalesOrderCard = ({ o, index, getStatusColor,handlePaymentDialogOpen, user
             </Box>
           </Box>
         </CardContent>
-        <CardActions sx={{display: 'flex', justifyContent: 'flex-end'}}>
-             {o.status !== "CANCELLED" && 
-                dayjs().isBefore(dayjs(o.created_at).add(3, "day"))  && <Button variant="outlined" color="error" startIcon={<DisabledByDefaultIcon size= 'small' />} onClick={()=> { handleCancelOrderDialogOpen(o)}}>
-                Cancel
+        <CardActions sx={{display: 'flex', alignItems: 'flex-end', flexDirection: 'column', gap:2}}>
+           {o.status !== "CANCELLED" && 
+                 <Button color="success" startIcon={<FileDownloadIcon size= 'small' />} onClick={()=> { handleDownloadEInvoice(o.sales_order_id, o.sales_order_code)}}>
+                E-Invoice JSON
             </Button>}
-             <Button variant="outlined" startIcon={<AccountBalanceIcon size= 'small' />} onClick={()=> { handlePaymentDialogOpen(o)}}>
-                Payments
-            </Button>
-            <Button variant="outlined" startIcon={<ReceiptIcon size= 'small' />} onClick={()=> {fetchSalesOrderItems(o.sales_order_id), handleViewDialogOpen(o)}}>
-                Invoice
-            </Button>
-         
+          <Box>
+                {o.status !== "CANCELLED" && 
+                  dayjs().isBefore(dayjs(o.created_at).add(3, "day"))  && <Button variant="outlined" color="error" startIcon={<DisabledByDefaultIcon size= 'small' />} onClick={()=> { handleCancelOrderDialogOpen(o)}}>
+                  Cancel
+              </Button>}
+              
+              <Button variant="outlined" startIcon={<AccountBalanceIcon size= 'small' />} onClick={()=> { handlePaymentDialogOpen(o)}}>
+                  Payments
+              </Button>
+              <Button variant="outlined" startIcon={<ReceiptIcon size= 'small' />} onClick={()=> {fetchSalesOrderItems(o.sales_order_id), handleViewDialogOpen(o)}}>
+                  Invoice
+              </Button>
+          
+
+          </Box>
+           
 
 
         </CardActions>
