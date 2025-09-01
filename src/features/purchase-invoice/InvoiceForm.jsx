@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Button, Grid, TextField, Autocomplete,
-  Typography
+  Typography, IconButton, Card
 } from '@mui/material';
+import { Add, Delete } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import { saveOrUpdateInvoiceService } from '../../services/invoicePaymentsService';
 import { useUI } from '../../context/UIContext';
 import { listAllPOsByVendorService } from '../../services/purchaseOrderService';
+import { getInvoiceWithItemsService } from '../../services/invoicePaymentsService';
 
-const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
+const InvoiceForm = ({ invoice, onClose, onSaved, vendorList, productList }) => {
   const { showSnackbar, showLoader, hideLoader } = useUI();
   const [poList, setPoList] = useState([]);
   const [selectedPO, setSelectedPO] = useState(null);
@@ -25,45 +27,77 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
     totalTaxAmount: '',
     totalInvoiceAmount: '',
     remarks: '',
+    items: []
   });
 
   useEffect(() => {
     if (invoice) {
-      setForm({
-        invoiceNumber: invoice.invoice_number,
-        invoiceDate: dayjs(invoice.invoice_date).format('YYYY-MM-DD'),
-        vendorId: invoice.vendor_id,
-        poId: invoice.po_id,
-        invoiceAmount: invoice.invoice_amount,
-        cgstAmount: invoice.cgst_amount,
-        sgstAmount: invoice.sgst_amount,
-        igstAmount: invoice.igst_amount,
-        totalTaxAmount: invoice.total_tax_amount,
-        totalInvoiceAmount: invoice.total_invoice_amount,
-        remarks: invoice.remarks || '',
-      });
+      showLoader()
+      getInvoiceWithItemsService(invoice.invoice_id).then(res => {
+        console.log("RES:::::::", res)
+        setForm({
+          invoiceNumber: invoice.invoice_number,
+          invoiceDate: dayjs(invoice.invoice_date).format('YYYY-MM-DD'),
+          vendorId: invoice.vendor_id,
+          poId: invoice.po_id,
+          invoiceAmount: invoice.invoice_amount,
+          cgstAmount: invoice.cgst_amount,
+          sgstAmount: invoice.sgst_amount,
+          igstAmount: invoice.igst_amount,
+          totalTaxAmount: invoice.total_tax_amount,
+          totalInvoiceAmount: invoice.total_invoice_amount,
+          remarks: invoice.remarks || '',
+          items: res?.items || []
+        });
+
+      }).catch(error => {
+        console.log("Error", error)
+        setForm({
+          invoiceNumber: invoice.invoice_number,
+          invoiceDate: dayjs(invoice.invoice_date).format('YYYY-MM-DD'),
+          vendorId: invoice.vendor_id,
+          poId: invoice.po_id,
+          invoiceAmount: invoice.invoice_amount,
+          cgstAmount: invoice.cgst_amount,
+          sgstAmount: invoice.sgst_amount,
+          igstAmount: invoice.igst_amount,
+          totalTaxAmount: invoice.total_tax_amount,
+          totalInvoiceAmount: invoice.total_invoice_amount,
+          remarks: invoice.remarks || '',
+          items: []
+        });
+      }).finally(() => {
+        hideLoader()
+      })
+
+
 
       if (invoice.vendor_id) {
         fetchALLPOsByVendors(invoice.vendor_id);
       }
     }
   }, [invoice]);
+
+  // auto-calc totals
   useEffect(() => {
-  const invoiceAmount = parseFloat(form.invoiceAmount) || 0;
-  const cgst = parseFloat(form.cgstAmount) || 0;
-  const sgst = parseFloat(form.sgstAmount) || 0;
-  const igst = parseFloat(form.igstAmount) || 0;
+    const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.taxable_value) || 0), 0);
+    const cgst = form.items.reduce((sum, i) => sum + (parseFloat(i.cgst_amount) || 0), 0);
+    const sgst = form.items.reduce((sum, i) => sum + (parseFloat(i.sgst_amount) || 0), 0);
+    const igst = form.items.reduce((sum, i) => sum + (parseFloat(i.igst_amount) || 0), 0);
 
-  const totalTax = cgst + sgst + igst;
-  const totalInvoice = invoiceAmount + totalTax;
+    const totalTax = cgst + sgst + igst;
+    const totalInvoice = subtotal + totalTax;
 
-  setForm(prev => ({
-    ...prev,
-    totalTaxAmount: totalTax.toFixed(2),
-    totalInvoiceAmount: totalInvoice.toFixed(2),
-  }));
-}, [form.invoiceAmount, form.cgstAmount, form.sgstAmount, form.igstAmount]);
-
+    setForm(prev => ({
+      ...prev,
+      invoiceAmount: subtotal.toFixed(2),
+      cgstAmount: cgst.toFixed(2),
+      sgstAmount: sgst.toFixed(2),
+      igstAmount: igst.toFixed(2),
+      totalTaxAmount: totalTax.toFixed(2),
+      totalInvoiceAmount: totalInvoice.toFixed(2),
+    }));
+  }, [form.items]);
 
   const fetchALLPOsByVendors = (vendorId) => {
     showLoader();
@@ -77,6 +111,63 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
+  //  ITEM HANDLERS
+  const addItem = () => {
+    setForm(prev => ({
+      ...prev,
+      items: [
+        ...prev.items,
+        {
+          product_id: '',
+          hsn_code: '',
+          uom: '',
+          quantity: 1,
+          unit_price: 0,
+          discount: 0,
+          taxable_value: 0,
+          cgst_percent: 0,
+          sgst_percent: 0,
+          igst_percent: 0,
+          cgst_amount: 0,
+          sgst_amount: 0,
+          igst_amount: 0,
+          line_total: 0
+        }
+      ]
+    }));
+  };
+
+  const removeItem = (index) => {
+    setForm(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateItem = (index, key, value) => {
+    const items = [...form.items];
+    items[index] = { ...items[index], [key]: value };
+    //console.log(items)
+
+    // recalc line totals
+    const qty = parseFloat(items[index].quantity) || 0;
+    const price = parseFloat(items[index].unit_price) || 0;
+    const discount = parseFloat(items[index].discount) || 0;
+    const taxable = qty * price - discount;
+
+    const cgst = taxable * ((parseFloat(items[index].cgst_percent) || 0) / 100);
+    const sgst = taxable * ((parseFloat(items[index].sgst_percent) || 0) / 100);
+    const igst = taxable * ((parseFloat(items[index].igst_percent) || 0) / 100);
+
+    items[index].taxable_value = taxable.toFixed(2);
+    items[index].cgst_amount = cgst.toFixed(2);
+    items[index].sgst_amount = sgst.toFixed(2);
+    items[index].igst_amount = igst.toFixed(2);
+    items[index].line_total = (taxable + cgst + sgst + igst).toFixed(2);
+
+    setForm(prev => ({ ...prev, items }));
+  };
+
   const handleSubmit = () => {
     const { invoiceNumber, vendorId, poId, totalInvoiceAmount, totalTaxAmount } = form;
 
@@ -84,19 +175,18 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
       showSnackbar('Please fill required fields - invoice number, vendor, po number', 'error');
       return;
     }
-    //console.log(parseFloat(totalInvoiceAmount || 0) <= 0)
-    if(parseFloat(totalInvoiceAmount || 0) <= 0){
-         showSnackbar('Total Invoice Amount can not be zero!', 'error');
-         return;
+
+    if (parseFloat(totalInvoiceAmount || 0) <= 0) {
+      showSnackbar('Total Invoice Amount can not be zero!', 'error');
+      return;
     }
 
-    if(parseFloat(totalTaxAmount || 0) < 0){
-         showSnackbar('Total Tax Amount can not be negetive!', 'error');
-         return;
+    if (parseFloat(totalTaxAmount || 0) < 0) {
+      showSnackbar('Total Tax Amount can not be negative!', 'error');
+      return;
     }
 
     showLoader();
-
     saveOrUpdateInvoiceService({
       ...form,
       invoiceId: invoice?.invoice_id || null
@@ -112,7 +202,8 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
   return (
     <Box mt={2}>
       <Grid container spacing={2}>
-         <Grid item xs={6}>
+        {/* VENDOR + PO */}
+        <Grid item xs={6}>
           <Autocomplete
             size="small"
             options={vendorList}
@@ -126,7 +217,6 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
             renderInput={(params) => <TextField {...params} label="Vendor" />}
           />
         </Grid>
-
         <Grid item xs={6}>
           <Autocomplete
             size="small"
@@ -134,154 +224,185 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList }) => {
             getOptionLabel={(o) => o.po_number || ''}
             value={poList.find(p => p.po_id === form.poId) || null}
             onChange={(_, newValue) => {
-                handleChange('poId', newValue?.po_id || '')
-                if(newValue?.po_id){
-                    setSelectedPO(poList.find(p => p.po_id === newValue.po_id))
-                }
+              handleChange('poId', newValue?.po_id || '')
+              if (newValue?.po_id) {
+                setSelectedPO(poList.find(p => p.po_id === newValue.po_id))
+              }
             }}
             renderInput={(params) => <TextField {...params} label="PO Number" />}
           />
         </Grid>
-       {selectedPO && typeof selectedPO === 'object' && Object.keys(selectedPO).length > 0 && (
-  <Grid item xs={12}>
-    <Box
-      sx={{
-        border: '1px solid #e0e0e0',
-        borderRadius: 2,
-        p: 2,
-        background: '#f9f9f9',
-        boxShadow: 1,
-      }}
-    >
-      <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-        Selected Purchase Order
-      </Typography>
 
-      <Grid container spacing={1}>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">PO Number</Typography>
-          <Typography variant="body1">{selectedPO.po_number}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Status</Typography>
-          <Typography variant="body1">{selectedPO.status}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Total Amount</Typography>
-          <Typography variant="body1">₹ {parseFloat(selectedPO.total_amount).toLocaleString()}</Typography>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <Typography variant="body2" color="text.secondary">Payment Terms</Typography>
-          <Typography variant="body1">{selectedPO.payment_terms}</Typography>
-        </Grid>
-      </Grid>
-    </Box>
-  </Grid>
-)}
-
+        {/* INVOICE MASTER */}
         <Grid item xs={12}>
-          <TextField
-            fullWidth
-             size="small"
-            label="Invoice Number"
+          <TextField fullWidth size="small" label="Invoice Number"
             value={form.invoiceNumber}
-            onChange={e => handleChange('invoiceNumber', e.target.value)}
-          />
+            onChange={e => handleChange('invoiceNumber', e.target.value)} />
         </Grid>
-
         <Grid item xs={6}>
-          <TextField
-            fullWidth
-             size="small"
-            label="Invoice Date"
-            type="date"
+          <TextField fullWidth size="small" type="date" label="Invoice Date"
             value={form.invoiceDate}
             onChange={e => handleChange('invoiceDate', e.target.value)}
-            InputLabelProps={{ shrink: true }}
-          />
+            InputLabelProps={{ shrink: true }} />
         </Grid>
 
-       
+        {/* INVOICE ITEMS */}
+    <Grid item xs={12}>
+  <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+    Invoice Items
+  </Typography>
 
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-             size="small"
-            label="Invoice Amount"
-            type="number"
-            value={form.invoiceAmount}
-            onChange={e => handleChange('invoiceAmount', e.target.value)}
-          />
-        </Grid>
-
-        <Grid item xs={4}>
-          <TextField
-            fullWidth
-             size="small"
-            label="CGST"
-            type="number"
-            value={form.cgstAmount}
-            onChange={e => handleChange('cgstAmount', e.target.value)}
-          />
-        </Grid>
-        <Grid item xs={4}>
-          <TextField
-            fullWidth
-            label="SGST"
-             size="small"
-            type="number"
-            value={form.sgstAmount}
-            onChange={e => handleChange('sgstAmount', e.target.value)}
-          />
-        </Grid>
-        <Grid item xs={4}>
-          <TextField
-            fullWidth
-            label="IGST"
-             size="small"
-            type="number"
-            value={form.igstAmount}
-            onChange={e => handleChange('igstAmount', e.target.value)}
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-             size="small"
-            label="Total Tax Amount"
-            type="number"
-            value={form.totalTaxAmount}
-            onChange={e => handleChange('totalTaxAmount', e.target.value)}
-            disabled
-          />
-        </Grid>
-
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-             size="small"
-            label="Total Invoice Amount"
-            type="number"
-            value={form.totalInvoiceAmount}
-            onChange={e => handleChange('totalInvoiceAmount', e.target.value)}
-            disabled
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <TextField
-          multiline
-          rows={2}
-            fullWidth
+  {form?.items?.map((item, idx) => (
+    <Card key={idx} variant="outlined" sx={{ mb: 2, p: 2, borderRadius: 2, boxShadow: 1 }}>
+      <Grid container spacing={2} alignItems="center">
+        {/* Product */}
+        <Grid item xs={3}>
+          <Autocomplete
             size="small"
-            label="Remarks"
-            value={form.remarks}
-            onChange={e => handleChange('remarks', e.target.value)}
-           
+            options={productList}
+            getOptionLabel={(p) => p.productName || ""}
+            value={productList?.find((p) => p.productId === item.product_id) || null}
+            onChange={(_, newValue) => {
+              setForm((prev) => {
+                const items = [...prev.items];
+                items[idx] = {
+                  ...items[idx],
+                  product_id: newValue?.productId || "",
+                  uom: newValue?.unit || "",
+                  hsn_code: newValue?.hsnCode || "",
+                };
+                return { ...prev, items };
+              });
+            }}
+            renderInput={(params) => (
+              <TextField {...params} label="Product" size="small" fullWidth />
+            )}
           />
         </Grid>
 
+        {/* Qty, Price, Disc */}
+        <Grid item xs={2}>
+          <TextField
+            size="small"
+            label="Qty"
+            type="number"
+            value={item.quantity}
+            onChange={(e) => updateItem(idx, "quantity", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <TextField
+            size="small"
+            label="Price"
+            type="number"
+            value={item.unit_price}
+            onChange={(e) => updateItem(idx, "unit_price", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={2}>
+          <TextField
+            size="small"
+            label="Disc."
+            type="number"
+            value={item.discount}
+            onChange={(e) => updateItem(idx, "discount", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+
+        {/* Tax */}
+        <Grid item xs={1.5}>
+          <TextField
+            size="small"
+            label="CGST %"
+            type="number"
+            value={item.cgst_percent}
+            onChange={(e) => updateItem(idx, "cgst_percent", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={1.5}>
+          <TextField
+            size="small"
+            label="SGST %"
+            type="number"
+            value={item.sgst_percent}
+            onChange={(e) => updateItem(idx, "sgst_percent", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={1.5}>
+          <TextField
+            size="small"
+            label="IGST %"
+            type="number"
+            value={item.igst_percent}
+            onChange={(e) => updateItem(idx, "igst_percent", e.target.value)}
+            fullWidth
+          />
+        </Grid>
+
+        {/* Readonly Fields */}
+        <Grid item xs={2}>
+          <TextField
+            size="small"
+            label="HSN Code"
+            value={item.hsn_code}
+            disabled
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={1.5}>
+          <TextField size="small" label="Unit" value={item.uom} disabled fullWidth />
+        </Grid>
+        <Grid item xs={2}>
+          <TextField
+            size="small"
+            label="Line Total"
+            value={item.line_total}
+            disabled
+            fullWidth
+          />
+        </Grid>
+
+        {/* Delete Button */}
+        <Grid item xs={0.5}>
+          <IconButton color="error" onClick={() => removeItem(idx)}>
+            <Delete />
+          </IconButton>
+        </Grid>
+      </Grid>
+    </Card>
+  ))}
+
+  <Button
+    variant="contained"
+    startIcon={<Add />}
+    onClick={addItem}
+    sx={{ mt: 1, borderRadius: 2 }}
+  >
+    Add Item
+  </Button>
+</Grid>
+
+        {/* TOTALS */}
+        <Grid item xs={6}>
+          <TextField fullWidth size="small" label="Total Tax" value={form.totalTaxAmount} disabled />
+        </Grid>
+        <Grid item xs={6}>
+          <TextField fullWidth size="small" label="Total Invoice" value={form.totalInvoiceAmount} disabled />
+        </Grid>
+
+        {/* REMARKS */}
+        <Grid item xs={12}>
+          <TextField fullWidth multiline rows={2} size="small"
+            label="Remarks" value={form.remarks}
+            onChange={e => handleChange('remarks', e.target.value)} />
+        </Grid>
+
+        {/* ACTION */}
         <Grid item xs={12} display="flex" justifyContent="flex-end">
           <Button variant="contained" onClick={handleSubmit}>
             {invoice ? 'Update' : 'Create'}

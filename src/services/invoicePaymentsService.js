@@ -168,3 +168,36 @@ export async function getPaymentsGroupedByInvoiceService(poId) {
   });
 }
 
+
+
+/**
+ * Get invoice details with items by invoiceId
+ */
+export async function getInvoiceWithItemsService(invoiceId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        invoiceId,
+      };
+
+      // API endpoint that should return invoice + item details
+      const response = await axiosPost("/invoice/getInvoiceWithItems", requestBody);
+
+      if (response?.status && response?.data) {
+        resolve(response.data.responseObject || {}); // return full invoice with items
+      } else {
+        reject(response?.data?.message || "Failed to fetch invoice with items");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
