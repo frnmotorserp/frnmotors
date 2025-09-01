@@ -160,7 +160,7 @@ export default function NavBar({ setOpenSidebar, logOut }) {
                 textTransform: 'uppercase',
               })}
             >
-              Audit System
+              ERP System
             </Typography>
           </Box>
 
