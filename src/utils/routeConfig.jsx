@@ -178,6 +178,12 @@ export  const subMenuRouteConfig = [
       "id": 47,
       "route": "/inventoryManagemnt/issueInventory"
     },
+          {
+      "menuName": "Inventory Management",
+      "submenuName": "Cashbook Management",
+      "id": 48,
+      "route": "/inventoryManagemnt/cashbook"
+    },
 
            {
       "menuName": "Dealer and Customer Management",
