@@ -74,7 +74,7 @@ export async function saveOrUpdateInvoiceService(invoiceDTO) {
  * Sync invoice payments
  * If payments are added/updated/deleted, send full list for a given invoiceId
  */
-export async function syncInvoicePaymentsService(invoiceId, vendorId, totalAmountAsPerInvoice, paymentList = []) {
+export async function syncInvoicePaymentsService(invoiceId, vendorId, totalAmountAsPerInvoice, paymentList = [], invoiceNumber) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -91,6 +91,7 @@ export async function syncInvoicePaymentsService(invoiceId, vendorId, totalAmoun
         paymentList,
         totalAmountAsPerInvoice,
         updatedBy: user?.userId,
+        invoiceNumber
       };
 
       const response = await axiosPost("/invoice/managePayments", requestBody);
@@ -195,6 +196,165 @@ export async function getInvoiceWithItemsService(invoiceId) {
         resolve(response.data.responseObject || {}); // return full invoice with items
       } else {
         reject(response?.data?.message || "Failed to fetch invoice with items");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+
+
+/**
+ * Add a new cash entry
+ */
+export async function addCashEntryService(entry) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        ...entry, // { entry_date, description, amount, entry_type }
+      };
+
+      const response = await axiosPost("/invoice/createCashEntry", requestBody);
+
+      if (response?.status && response?.data?.id) {
+        resolve(response.data || {});
+      } else {
+        reject(response?.data?.message || "Failed to add cash entry");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Update an existing cash entry
+ */
+export async function updateCashEntryService(id, entry) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        id,
+        ...entry,
+      };
+
+      const response = await axiosPost("/invoice/editCashEntry", requestBody);
+
+      if (response?.status && response?.data?.success) {
+        resolve(response.data.data || {});
+      } else {
+        reject(response?.data?.message || "Failed to update cash entry");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Delete a cash entry
+ */
+export async function deleteCashEntryService(id) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        id,
+      };
+
+      const response = await axiosPost("/invoice/removeCashEntry", requestBody);
+
+      if (response?.status && response?.data?.success) {
+        resolve(response.data.message || "Cash entry deleted successfully");
+      } else {
+        reject(response?.data?.message || "Failed to delete cash entry");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Get cash entries with optional date range
+ */
+export async function getCashEntriesService(startDate, endDate) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      // API expects query params for startDate and endDate
+      const queryParams = `?startDate=${startDate || ""}&endDate=${endDate || ""}`;
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+      };
+
+      const response = await axiosPost(`/invoice/listCashEntries${queryParams}`, requestBody);
+      console.log(response)
+      if (response?.status && response?.data) {
+        resolve(response.data || []);
+      } else {
+        reject(response?.data?.message || "Failed to fetch cash entries");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Get current cash balance
+ */
+export async function getCashBalanceService() {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+      };
+
+      const response = await axiosPost("/invoice/fetchCashBalance", requestBody);
+
+      if (response?.status && response?.data) {
+        resolve(response?.data?.balance || 0);
+      } else {
+        reject(response?.data?.message || "Failed to fetch cash balance");
       }
     } catch (error) {
       reject(error);
