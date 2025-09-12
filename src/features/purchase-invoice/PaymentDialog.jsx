@@ -96,7 +96,7 @@ const PaymentDialog = ({ invoice, onClose, mode }) => {
             return
         }
         showLoader();
-        syncInvoicePaymentsService(invoice.invoice_id, invoice.vendor_id, invoice.total_invoice_amount, paymentList)
+        syncInvoicePaymentsService(invoice.invoice_id, invoice.vendor_id, invoice.total_invoice_amount, paymentList, invoice.invoice_number)
             .then(() => showSnackbar('Payments synced successfully', 'success'))
             .catch(() => showSnackbar('Failed to sync payments', 'error'))
             .finally(() => hideLoader());
