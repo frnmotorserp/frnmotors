@@ -31,6 +31,7 @@ import DealerManagementPage from './pages/DealerManagementPage';
 import CustomerManagementPage from './pages/CustomerManagementPage';
 import SalesOrderManangement from './pages/SalesOrderManangement';
 import DealerVisitLogsPage from './pages/DealerVisitLogsPage';
+import CashbookManagement  from './pages/CashbookManagement';
 
 
 
@@ -109,6 +110,7 @@ function App() {
                 <Route path="inventoryManagemnt/inventory" element={<InventoryPage />} />
                 <Route path="inventoryManagemnt/modifyInventory" element={<InventoryAdjustmentPage />} />
                 <Route path="inventoryManagemnt/issueInventory" element={<InventoryIssuePage />} />
+                <Route path="inventoryManagemnt/cashbook" element={<CashbookManagement />} />
                 
                 
                 <Route path="dealer-customer/dealerManagement" element={<DealerManagementPage />} />
