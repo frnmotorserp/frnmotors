@@ -1,74 +1,78 @@
-import React, { useEffect, useState } from 'react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Autocomplete from '@mui/material/Autocomplete';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import Chip from '@mui/material/Chip';
-import Stack from '@mui/material/Stack';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import Alert from '@mui/material/Alert';
-import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add';
-import dayjs from 'dayjs';
-import PageWrapper from '../layouts/PageWrapper';
-import { useUI } from '../context/UIContext';
-import { getAcceessMatrix } from '../utils/loginUtil';
-import { getAllCustomersService } from '../services/customerService';
-import CreateOrEditSalesOrderForm from '../features/sales-order/CreateOrEditSalesOrderForm';
-import { getAllCompanyDetailsService } from '../services/locationService';
-import {  listAllSalesOrdersService,
-  updateSalesOrderStatusService, getSalesOrderItemsService } from '../services/salesService';
-import {getStateListService} from '../services/stateServices'
-import { getAllDealersService } from '../services/dealerService';
-import { getAllLocationListService } from '../services/locationService';
-import { fetchUserListService } from '../services/userServices';
-import SalesOrderCard from '../features/sales-order/SalesOrderCard';
-import ViewDownloadInvoice from '../features/sales-order/ViewDownloadInvoice';
-import PaymentHistoryDialog from '../features/sales-order/PaymentHistoryDialog';
-import CancelSalesOrderDialog from '../features/sales-order/CancelSalesOrderDialog';
-import { generateEInvoiceJSONService } from '../services/salesService';
+import React, { useEffect, useState } from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Autocomplete from "@mui/material/Autocomplete";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Alert from "@mui/material/Alert";
+import SearchIcon from "@mui/icons-material/Search";
+import AddIcon from "@mui/icons-material/Add";
+import dayjs from "dayjs";
+import PageWrapper from "../layouts/PageWrapper";
+import { useUI } from "../context/UIContext";
+import { getAcceessMatrix } from "../utils/loginUtil";
+import { getAllCustomersService } from "../services/customerService";
+import CreateOrEditSalesOrderForm from "../features/sales-order/CreateOrEditSalesOrderForm";
+import { getAllCompanyDetailsService } from "../services/locationService";
+import {
+  listAllSalesOrdersService,
+  updateSalesOrderStatusService,
+  getSalesOrderItemsService,
+} from "../services/salesService";
+import { getStateListService } from "../services/stateServices";
+import { getAllDealersService } from "../services/dealerService";
+import { getAllLocationListService } from "../services/locationService";
+import { fetchUserListService } from "../services/userServices";
+import SalesOrderCard from "../features/sales-order/SalesOrderCard";
+import ViewDownloadInvoice from "../features/sales-order/ViewDownloadInvoice";
+import PaymentHistoryDialog from "../features/sales-order/PaymentHistoryDialog";
+import CancelSalesOrderDialog from "../features/sales-order/CancelSalesOrderDialog";
+import { generateEInvoiceJSONService } from "../services/salesService";
 
 const getStatusColor = (status) => {
   switch (status) {
-    case 'DRAFT': return 'warning';
-    case 'CONFIRMED': return 'primary';
-    case 'CANCELLED': return 'error';
-    default: return 'default';
+    case "DRAFT":
+      return "warning";
+    case "CONFIRMED":
+      return "primary";
+    case "CANCELLED":
+      return "error";
+    default:
+      return "default";
   }
 };
 
-const statusTabs = [
-  'ALL',
-  'CONFIRMED',
-  'CANCELLED',
-];
+const statusTabs = ["ALL", "CONFIRMED", "CANCELLED"];
 
 const SalesOrderManangement = () => {
   const { showSnackbar, showLoader, hideLoader } = useUI();
   const [salesList, setSalesList] = useState([]);
   const [customerList, setCustomerList] = useState([]);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedDealer, setSelectedDealer] = useState(null);
 
   const [filters, setFilters] = useState({
-    customerId: '',
-    customerName: '',
-    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
-    endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
+    customerId: "",
+    customerName: "",
+    startDate: dayjs().startOf("month").format("YYYY-MM-DD"),
+    endDate: dayjs().endOf("month").format("YYYY-MM-DD"),
   });
   const [accessMatrix, setAccessMatrix] = useState({});
   const [openDialog, setOpenDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [editData, setEditData] = useState(null);
   const [viewData, setViewData] = useState(null);
-  const [mode, setMode] = useState('create');
-  const [selectedTab, setSelectedTab] = useState('ALL');
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [mode, setMode] = useState("create");
+  const [selectedTab, setSelectedTab] = useState("ALL");
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [companyList, setCompanyList] = useState([]);
   const [stateList, setStateList] = useState([]);
   const [dealerList, setDealerList] = useState([]);
@@ -80,57 +84,50 @@ const SalesOrderManangement = () => {
   const [salesOrderItems, setSalesOrderItems] = useState([]);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
 
-
   async function handleDownloadEInvoice(salesOrderId, salesOrderCode) {
-  try {
-    showLoader()
-    const einvoiceJson = await generateEInvoiceJSONService(salesOrderId);
+    try {
+      showLoader();
+      const einvoiceJson = await generateEInvoiceJSONService(salesOrderId);
 
-    // Convert to downloadable JSON file
-    const blob = new Blob([JSON.stringify(einvoiceJson, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+      // Convert to downloadable JSON file
+      const blob = new Blob([JSON.stringify(einvoiceJson, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `EInvoice_${salesOrderCode}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-     showSnackbar("E-Invoice JSON generated successfully!", "success")
-  } catch (error) {
-    showSnackbar("Error generating E-Invoice JSON!", "error")
-    console.error("Error generating E-Invoice JSON:", error);
-  } finally {
-    hideLoader()
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `EInvoice_${salesOrderCode}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSnackbar("E-Invoice JSON generated successfully!", "success");
+    } catch (error) {
+      showSnackbar("Error generating E-Invoice JSON!", "error");
+      console.error("Error generating E-Invoice JSON:", error);
+    } finally {
+      hideLoader();
+    }
   }
-}
 
-
-
-    // Consolidated data fetching function
+  // Consolidated data fetching function
   const fetchAllInitialData = async () => {
     // Show a single loader for all requests
     showLoader();
-    setError(''); // Clear any previous errors
+    setError(""); // Clear any previous errors
 
     try {
       // Use Promise.all to fetch all data concurrently
-      const [
-        dealers,
-        customers,
-        companyDetails,
-        states,
-        locations,
-        usersRes
-      ] = await Promise.all([
-        getAllDealersService(),
-        getAllCustomersService(),
-        getAllCompanyDetailsService(),
-        getStateListService(),
-        getAllLocationListService(),
-        fetchUserListService()
-      ]);
+      const [dealers, customers, companyDetails, states, locations, usersRes] =
+        await Promise.all([
+          getAllDealersService(),
+          getAllCustomersService(),
+          getAllCompanyDetailsService(),
+          getStateListService(),
+          getAllLocationListService(),
+          fetchUserListService(),
+        ]);
 
       // Update state with results
       setDealerList(dealers || []);
@@ -140,48 +137,50 @@ const SalesOrderManangement = () => {
       setLocationList(locations || []);
       setUserList(usersRes?.responseObject || []);
 
-      if(usersRes?.responseObject){
-        const users = usersRes?.responseObject
+      if (usersRes?.responseObject) {
+        const users = usersRes?.responseObject;
         const userMap = {};
 
-        users.forEach(user => {
-          const fullName = [user.userFirstname, user.userMiddlename, user.userLastname]
+        users.forEach((user) => {
+          const fullName = [
+            user.userFirstname,
+            user.userMiddlename,
+            user.userLastname,
+          ]
             .filter(Boolean) // removes empty string
-            .join(' ');
+            .join(" ");
           userMap[user.userId] = `${fullName} - ${user.loginId}`;
         });
         //console.log(userMap, "userMap")
-        setUserIDUserNameMap(userMap)
+        setUserIDUserNameMap(userMap);
       }
 
-      if(customers && customers?.length > 0){
+      if (customers && customers?.length > 0) {
         const customerMap = {};
 
-        customers.forEach(customer => {
-          const fullName = [customer.customerName]
-          customerMap[customer.customerId] = fullName ;
+        customers.forEach((customer) => {
+          const fullName = [customer.customerName];
+          customerMap[customer.customerId] = fullName;
         });
-       
-        setCustomerIDNameMap(customerMap)
+
+        setCustomerIDNameMap(customerMap);
       }
 
-      
-      if(dealers && dealers?.length > 0){
+      if (dealers && dealers?.length > 0) {
         const dealerMap = {};
 
-        dealers.forEach(dealer => {
-          const fullName = [dealer.dealerName]
-          dealerMap[dealer.dealerId] = fullName ;
+        dealers.forEach((dealer) => {
+          const fullName = [dealer.dealerName];
+          dealerMap[dealer.dealerId] = fullName;
         });
-       
-        setDealerIDNameMap(dealerMap)
+
+        setDealerIDNameMap(dealerMap);
       }
 
-
       // Show a single success message
-      showSnackbar('Initial data loaded successfully!', 'success');
+      showSnackbar("Initial data loaded successfully!", "success");
     } catch (err) {
-      console.error('Error fetching initial data:', err);
+      console.error("Error fetching initial data:", err);
       // Clear all state on failure
       setDealerList([]);
       setCustomerList([]);
@@ -189,35 +188,33 @@ const SalesOrderManangement = () => {
       setStateList([]);
       setLocationList([]);
       // Show a single error message
-      showSnackbar('Failed to load initial data. Please try again.', 'error');
+      showSnackbar("Failed to load initial data. Please try again.", "error");
     } finally {
       // Hide the loader once all promises are settled
       hideLoader();
     }
   };
 
-
   useEffect(() => {
     fetchAllInitialData();
 
-    const access = getAcceessMatrix('Sales', 'Order Management');
+    const access = getAcceessMatrix("Sales", "Order Management");
     setAccessMatrix(access);
-  }, []); 
-
+  }, []);
 
   const fetchSalesOrders = async (hideSnackbar) => {
     if (!filters.startDate || !filters.endDate) {
-      setError('Start Date and End Date are required.');
+      setError("Start Date and End Date are required.");
       setSalesList([]);
       return;
     }
     if (dayjs(filters.endDate).isBefore(dayjs(filters.startDate))) {
-      setError('End Date cannot be earlier than Start Date.');
+      setError("End Date cannot be earlier than Start Date.");
       setSalesList([]);
       return;
     }
 
-    setError('');
+    setError("");
     showLoader();
     try {
       const res = await listAllSalesOrdersService(
@@ -226,57 +223,67 @@ const SalesOrderManangement = () => {
         filters.customerId
       );
       setSalesList(res || []);
-      !hideSnackbar && showSnackbar(res?.length ? 'Sales orders fetched!' : 'No sales orders found!', res?.length ? 'success' : 'warning');
+      !hideSnackbar &&
+        showSnackbar(
+          res?.length ? "Sales orders fetched!" : "No sales orders found!",
+          res?.length ? "success" : "warning"
+        );
     } catch (err) {
-      console.error('Error fetching sales orders:', err);
+      console.error("Error fetching sales orders:", err);
       setSalesList([]);
-      !hideSnackbar && showSnackbar('Failed to fetch sales orders', 'error');
+      !hideSnackbar && showSnackbar("Failed to fetch sales orders", "error");
     } finally {
       hideLoader();
     }
   };
 
-
   const fetchSalesOrderItems = async (salesOrderId, hideSnackbar) => {
-  if (!salesOrderId) {
-    setError('Sales Order ID is required.');
-    setSalesOrderItems([]);
-    return;
-  }
+    if (!salesOrderId) {
+      setError("Sales Order ID is required.");
+      setSalesOrderItems([]);
+      return;
+    }
 
-  setError('');
-  showLoader();
-  try {
-    const res = await getSalesOrderItemsService(salesOrderId);
-    console.log(res)
-    setSalesOrderItems(res || []);
-    !hideSnackbar &&
-      showSnackbar(
-        res?.length ? 'Sales order items fetched!' : 'No items found for this order!',
-        res?.length ? 'success' : 'warning'
-      );
-  } catch (err) {
-    console.error('Error fetching sales order items:', err);
-    setSalesOrderItems([]);
-    !hideSnackbar && showSnackbar('Failed to fetch sales order items', 'error');
-  } finally {
-    hideLoader();
-  }
-};
+    setError("");
+    showLoader();
+    try {
+      const res = await getSalesOrderItemsService(salesOrderId);
+      console.log(res);
+      setSalesOrderItems(res || []);
+      !hideSnackbar &&
+        showSnackbar(
+          res?.length
+            ? "Sales order items fetched!"
+            : "No items found for this order!",
+          res?.length ? "success" : "warning"
+        );
+    } catch (err) {
+      console.error("Error fetching sales order items:", err);
+      setSalesOrderItems([]);
+      !hideSnackbar &&
+        showSnackbar("Failed to fetch sales order items", "error");
+    } finally {
+      hideLoader();
+    }
+  };
 
   // Example of a re-usable fetch function
   const fetchCustomers = async (hideSnackbar) => {
     showLoader();
     try {
-        const res = await getAllCustomersService();
-        setCustomerList(res || []);
-        !hideSnackbar && showSnackbar(res?.length ? 'Customers fetched!' : 'No customers found!', res?.length ? 'success' : 'warning');
+      const res = await getAllCustomersService();
+      setCustomerList(res || []);
+      !hideSnackbar &&
+        showSnackbar(
+          res?.length ? "Customers fetched!" : "No customers found!",
+          res?.length ? "success" : "warning"
+        );
     } catch (err) {
-        console.error('Error fetching customers:', err);
-        setCustomerList([]);
-        !hideSnackbar && showSnackbar('Failed to fetch customers', 'error');
+      console.error("Error fetching customers:", err);
+      setCustomerList([]);
+      !hideSnackbar && showSnackbar("Failed to fetch customers", "error");
     } finally {
-        hideLoader();
+      hideLoader();
     }
   };
 
@@ -287,7 +294,7 @@ const SalesOrderManangement = () => {
   //   fetchCompanyDetails(true)
   //   getStateListAPICall(true)
   //   getLocationListAPICall(true)
-    
+
   //   const access = getAcceessMatrix('Sales', 'Order Management');
   //   setAccessMatrix(access);
   // }, []);
@@ -309,7 +316,7 @@ const SalesOrderManangement = () => {
   //           !hideSnackbar && showSnackbar('State list fetched successfully!', 'success' )
   //         }
   //         else{
-            
+
   //           !hideSnackbar && showSnackbar('State List is Empty!', 'warning' )
   //           setStateList([])
   //         }
@@ -320,7 +327,7 @@ const SalesOrderManangement = () => {
   //         setStateList([])
   //         !hideSnackbar && showSnackbar('Failed to fetch state list!', 'error' )
   //       })
-  
+
   //     }
 
   //   const getLocationListAPICall = (hideSnackbar) => {
@@ -421,80 +428,85 @@ const SalesOrderManangement = () => {
 
   const updateStatus = (id, newStatus) => {
     if (!id || !newStatus) {
-      showSnackbar('Invalid order or status!', 'error');
+      showSnackbar("Invalid order or status!", "error");
       return;
     }
     showLoader();
     updateSalesOrderStatusService(id, newStatus)
       .then(() => {
-        showSnackbar('Sales order status updated!', 'success');
+        showSnackbar("Sales order status updated!", "success");
         fetchSalesOrders(true);
       })
-      .catch(err => {
-        console.error('Status update failed:', err);
-        showSnackbar('Failed to update status', 'error');
+      .catch((err) => {
+        console.error("Status update failed:", err);
+        showSnackbar("Failed to update status", "error");
       })
       .finally(() => hideLoader());
   };
 
-  const handleCancelOrderDialogOpen = (so = null, currMode = 'create') => {
+  const handleCancelOrderDialogOpen = (so = null, currMode = "create") => {
     setViewData(so);
     //setMode(currMode);
     setCancelDialogOpen(true);
   };
 
-    const handleDialogOpen = (so = null, currMode = 'create') => {
+  const handleDialogOpen = (so = null, currMode = "create") => {
     setEditData(so);
     setMode(currMode);
     setOpenDialog(true);
   };
-
 
   const handleDialogClose = () => {
     setEditData(null);
     setOpenDialog(false);
   };
 
-     const handleViewDialogOpen = (itemData) => {
-    setViewData(itemData || {})
+  const handleViewDialogOpen = (itemData) => {
+    setViewData(itemData || {});
     setOpenViewDialog(true);
   };
 
   const handlePaymentDialogOpen = (itemData) => {
-    setViewData(itemData || {})
+    setViewData(itemData || {});
     setPaymentDialogOpen(true);
   };
 
-   const handlePaymentDialogClose = () => {
-    setViewData(null)
+  const handlePaymentDialogClose = () => {
+    setViewData(null);
     setPaymentDialogOpen(false);
   };
-   const handleViewDialogClose = () => {
-    setViewData(null)
+  const handleViewDialogClose = () => {
+    setViewData(null);
     setOpenViewDialog(false);
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const ActionButtonsArr = [
     {
       showHeaderButton: true,
-      buttonText: 'Create Sales Order',
+      buttonText: "Create Sales Order",
       buttonCallback: () => handleDialogOpen(),
-      buttonIcon: <AddIcon fontSize='small' />,
+      buttonIcon: <AddIcon fontSize="small" />,
       access: accessMatrix?.create ?? false,
-    }
+    },
   ];
 
-
-  
-
   return (
-    <PageWrapper title="Sales Order Management" actionButtons={ActionButtonsArr}>
+    <PageWrapper
+      title="Sales Order Management"
+      actionButtons={ActionButtonsArr}
+    >
       <Box>
-        <Stack direction="row" spacing={2} my={2} flexWrap="wrap" justifyContent="center">
+        <Stack
+          direction="row"
+          spacing={2}
+          my={2}
+          flexWrap="wrap"
+          justifyContent="center"
+        >
           {/* <Autocomplete
             size="small"
             options={customerList}
@@ -518,7 +530,7 @@ const SalesOrderManangement = () => {
             type="date"
             size="small"
             value={filters.startDate}
-            onChange={(e) => handleFilterChange('startDate', e.target.value)}
+            onChange={(e) => handleFilterChange("startDate", e.target.value)}
             InputLabelProps={{ shrink: true }}
           />
           <TextField
@@ -526,7 +538,7 @@ const SalesOrderManangement = () => {
             type="date"
             size="small"
             value={filters.endDate}
-            onChange={(e) => handleFilterChange('endDate', e.target.value)}
+            onChange={(e) => handleFilterChange("endDate", e.target.value)}
             InputLabelProps={{ shrink: true }}
           />
           <Button variant="contained" onClick={() => fetchSalesOrders()}>
@@ -536,30 +548,72 @@ const SalesOrderManangement = () => {
 
         {error && (
           <Box display="flex" justifyContent="center">
-            <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
           </Box>
         )}
 
-        <Box sx={{ borderRadius: 2, backgroundColor: '#fff', p: 1, mb: 1 }}>
+        <Box sx={{ borderRadius: 2, backgroundColor: "#fff", p: 1, mb: 1 }}>
           <Tabs
             value={selectedTab}
             onChange={(e, val) => setSelectedTab(val)}
             variant="scrollable"
             scrollButtons="auto"
           >
-            {statusTabs.map(status => (
-              <Tab key={status} label={status} value={status}
+            {statusTabs.map((status) => (
+              <Tab
+                key={status}
+                label={status}
+                value={status}
                 sx={{
-                  textTransform: 'none', fontWeight: 500, borderRadius: 8,
-                  minWidth: 120, color: selectedTab === status ? 'primary.main' : 'text.secondary'
+                  textTransform: "none",
+                  fontWeight: 500,
+                  borderRadius: 8,
+                  minWidth: 120,
+                  color:
+                    selectedTab === status ? "primary.main" : "text.secondary",
                 }}
               />
             ))}
           </Tabs>
         </Box>
 
-        {salesList?.filter(o => selectedTab === 'ALL' || o.status === selectedTab)?.length > 0 && (
-          <Box sx={{ display: 'flex', justifyContent: 'end', pr: 2, mb: 2 }}>
+        {salesList?.filter(
+          (o) => selectedTab === "ALL" || o.status === selectedTab
+        )?.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "end",
+              pr: 2,
+              mb: 2,
+              gap: 2,
+            }}
+          >
+            <Autocomplete
+              options={dealerList}
+              getOptionLabel={(option) =>
+                option.dealerName
+                  ? `${option.dealerName} (${option.dealerCode})`
+                  : "Unnamed Dealer"
+              }
+              value={selectedDealer}
+              onChange={(event, newValue) => {
+                console.log(newValue);
+                setSelectedDealer(newValue);
+              }}
+              renderInput={(params) => (
+                <TextField
+                  size="small"
+                  {...params}
+                  label="Filter with Dealer"
+                  placeholder="Choose dealer"
+                  sx={{ minWidth: 300 }}
+                />
+              )}
+              size="small"
+            />
             <TextField
               size="small"
               placeholder="Search Order No"
@@ -571,30 +625,40 @@ const SalesOrderManangement = () => {
           </Box>
         )}
         <Box m={2}>
-               <Grid container spacing={3} mb={3}>
-          {salesList
-            ?.filter(o => selectedTab === 'ALL' || o.status === selectedTab)
-            ?.filter(o =>  !searchQuery || o.order_number?.toLowerCase().includes(searchQuery.toLowerCase()))
-            ?.map((o, index) => (
-             <SalesOrderCard  
-             o={o} 
-             index={index} 
-             key={index}
-             fetchSalesOrderItems={fetchSalesOrderItems} 
-             getStatusColor={getStatusColor} 
-             userIDUserNameMap={userIDUserNameMap} 
-             dealerIDNameMap={dealerIDNameMap} 
-             customerIDNameMap={customerIDNameMap} 
-             handlePaymentDialogOpen={handlePaymentDialogOpen}
-             handleViewDialogOpen = {handleViewDialogOpen}
-             handleCancelOrderDialogOpen={handleCancelOrderDialogOpen}
-             handleDownloadEInvoice={handleDownloadEInvoice}
-             />
-            ))}
-        </Grid>
-
+          <Grid container spacing={3} mb={3}>
+            {salesList
+              ?.filter((o) => selectedTab === "ALL" || o.status === selectedTab)
+              ?.filter(
+                (o) =>
+                  !searchQuery ||
+                  o.order_number
+                    ?.toLowerCase()
+                    .includes(searchQuery.toLowerCase())
+              )
+              ?.filter(
+                (o) =>
+                  !selectedDealer ||
+                  !selectedDealer?.dealerId ||
+                  o.dealer_id === selectedDealer?.dealerId
+              )
+              ?.map((o, index) => (
+                <SalesOrderCard
+                  o={o}
+                  index={index}
+                  key={index}
+                  fetchSalesOrderItems={fetchSalesOrderItems}
+                  getStatusColor={getStatusColor}
+                  userIDUserNameMap={userIDUserNameMap}
+                  dealerIDNameMap={dealerIDNameMap}
+                  customerIDNameMap={customerIDNameMap}
+                  handlePaymentDialogOpen={handlePaymentDialogOpen}
+                  handleViewDialogOpen={handleViewDialogOpen}
+                  handleCancelOrderDialogOpen={handleCancelOrderDialogOpen}
+                  handleDownloadEInvoice={handleDownloadEInvoice}
+                />
+              ))}
+          </Grid>
         </Box>
-   
 
         <CreateOrEditSalesOrderForm
           open={openDialog}
@@ -608,36 +672,34 @@ const SalesOrderManangement = () => {
           locationList={locationList || []}
           userList={userList || []}
           onSuccess={() => fetchSalesOrders(true)}
-
         />
-           <ViewDownloadInvoice
+        <ViewDownloadInvoice
           open={openViewDialog}
           handleClose={handleViewDialogClose}
           salesOrder={viewData}
           items={salesOrderItems || []}
           companyList={companyList || []}
-           customerList={customerList || []}
-       
+          customerList={customerList || []}
           dealerList={dealerList || []}
-
         />
 
         <CancelSalesOrderDialog
-        open={cancelDialogOpen}
-        onClose={() => setCancelDialogOpen(false)}
-        salesOrderId={viewData?.sales_order_id}
-        onCancelled={() => {fetchSalesOrders(true)}} 
-        salesOrderCode={viewData?.sales_order_code}
-
-      />
-        <PaymentHistoryDialog open={paymentDialogOpen} 
-        onClose={handlePaymentDialogClose} 
-        salesOrderId={viewData?.sales_order_id} 
-        orderAmount={viewData?.grand_total}  
-        salesOrderCode={viewData?.sales_order_code}
-        orderStatus ={viewData?.status}
+          open={cancelDialogOpen}
+          onClose={() => setCancelDialogOpen(false)}
+          salesOrderId={viewData?.sales_order_id}
+          onCancelled={() => {
+            fetchSalesOrders(true);
+          }}
+          salesOrderCode={viewData?.sales_order_code}
         />
-        
+        <PaymentHistoryDialog
+          open={paymentDialogOpen}
+          onClose={handlePaymentDialogClose}
+          salesOrderId={viewData?.sales_order_id}
+          orderAmount={viewData?.grand_total}
+          salesOrderCode={viewData?.sales_order_code}
+          orderStatus={viewData?.status}
+        />
       </Box>
     </PageWrapper>
   );
