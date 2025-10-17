@@ -36,6 +36,7 @@ export default function BulkAdjustmentDialog({
       serialNumbersAdd: "",
       serialNumbers: [],
        serialOptions: [],
+       selectedCategory: ""
     }
   ]);
 
@@ -50,6 +51,7 @@ export default function BulkAdjustmentDialog({
       serialNumbersAdd: "",
       serialNumbers: [],
        serialOptions: [],
+       selectedCategory: ""
     }]
 
     )
@@ -121,6 +123,7 @@ export default function BulkAdjustmentDialog({
         serialNumbersAdd: "",
       serialNumbers: [],
        serialOptions: [],
+       selectedCategory: ""
       },
     ]);
   };
@@ -291,12 +294,41 @@ export default function BulkAdjustmentDialog({
       {index + 1}
     </Box>
       <Grid container spacing={2} alignItems="center">
+        
+              {/* Category Filter */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Autocomplete
+                  size="small"
+                  fullWidth
+                  options={[
+                    ...new Map(products.map((p) => [p.productCategoryId, p])).values(),
+                  ]}
+                  getOptionLabel={(option) => option.productCategoryName || "-"}
+                  value={
+                    adj.selectedCategory
+                      ? {
+                          productCategoryId: adj.selectedCategory,
+                          productCategoryName:
+                            products.find((p) => p.productCategoryId === adj.selectedCategory)
+                              ?.productCategoryName || "-",
+                        }
+                      : null
+                  }
+                  onChange={(e, newValue) => {
+                    handleChange(index, "selectedCategory", newValue?.productCategoryId || "");
+                    handleChange(index, "productId", ""); // Reset product if category changes
+                  }}
+                  renderInput={(params) => <TextField {...params} label="Category" />}
+                />
+              </Grid>
     
         <Grid item xs={12} sm={6} md={3}>
           <Autocomplete
             size="small"
             fullWidth
-            options={products}
+            options={products.filter(
+                    (p) => !adj.selectedCategory || p.productCategoryId === adj.selectedCategory
+                  )}
             getOptionLabel={(option) =>
               `${option.productName || "-"} (${option.productCategoryName || "-"})`
             }

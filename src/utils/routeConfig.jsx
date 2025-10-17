@@ -178,14 +178,20 @@ export  const subMenuRouteConfig = [
       "id": 47,
       "route": "/inventoryManagemnt/issueInventory"
     },
-          {
+    {
       "menuName": "Inventory Management",
       "submenuName": "Cashbook Management",
       "id": 48,
       "route": "/inventoryManagemnt/cashbook"
     },
+    {
+      "menuName": "Inventory Management",
+      "submenuName": "Bankbook Management",
+      "id": 49,
+      "route": "/inventoryManagemnt/bankbook"
+    },
 
-           {
+    {
       "menuName": "Dealer and Customer Management",
       "submenuName": "Dealer Management",
       "id": 51,
@@ -233,6 +239,12 @@ export  const subMenuRouteConfig = [
       "submenuName": "Access Management",
       "id": 83,
       "route": "sa/userrolemap"
+    },
+    {
+      "menuName": "System Administration",
+      "submenuName": "Expense Category Management",
+      "id": 84,
+      "route": "sa/expenseCategory"
     },
 
 

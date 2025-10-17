@@ -631,7 +631,7 @@ const SalesOrderManangement = () => {
               ?.filter(
                 (o) =>
                   !searchQuery ||
-                  o.order_number
+                  o.sales_order_code
                     ?.toLowerCase()
                     .includes(searchQuery.toLowerCase())
               )

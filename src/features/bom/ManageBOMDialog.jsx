@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -34,6 +34,19 @@ function ManageBOMDialog({ open, handleClose, product, allProducts = [] }) {
   const [grandTotalWithGST, setGrandTotalWithGST] = useState(0);
   const { showSnackbar, showLoader, hideLoader } = useUI();
   console.log("bomList", bomList);
+
+  const totalByUnit = useMemo(() => {
+        const result = {};
+        bomList.forEach((item) => {
+          const unit = item.unit || "N/A";
+          const qty = parseFloat(item.quantity || 0);
+          if (!result[unit]) {
+            result[unit] = 0;
+          }
+          result[unit] += qty;
+        });
+        return result; // e.g., { kg: 15, pcs: 5 }
+}, [bomList]);
 
   const handleExportToExcel = () => {
     const productName = product?.productName || "N/A";
@@ -200,7 +213,7 @@ function ManageBOMDialog({ open, handleClose, product, allProducts = [] }) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
+    <Dialog open={open} onClose={handleClose} fullWidth fullScreen>
       <DialogTitle>
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>
           <Typography variant="h6">
@@ -229,6 +242,39 @@ function ManageBOMDialog({ open, handleClose, product, allProducts = [] }) {
             Add Component
           </Button>
           </Box>
+          <Box sx={{display: 'flex', gap: 2}}>
+                <Box
+  sx={{
+    mb: 2,
+    p: 3,
+    border: "2px solid #1976d2",
+    borderRadius: 3,
+    background: "linear-gradient(145deg, #f9f9f9, #e3f2fd)",
+    boxShadow: "0px 4px 10px rgba(0,0,0,0.15)",
+    maxWidth: 400,
+    ml: "auto",
+  }}
+>
+  <Typography variant="h6" fontWeight={700} color="text.primary" sx={{ mb: 1 }}>
+    Product Summary
+  </Typography>
+  <Divider sx={{ mb: 1 }} />
+
+  {/* Materials Used (Qty per Unit) */}
+  <Box sx={{ mb: 1 }}>
+    <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+      Materials Used:
+    </Typography>
+    {Object.entries(totalByUnit).map(([unit, qty]) => (
+      <Typography key={unit} variant="body2" fontWeight={500} color="text.primary">
+        {qty} {unit}
+      </Typography>
+    ))}
+  </Box>
+
+ 
+</Box>
+
           
          
 <Box
@@ -260,6 +306,7 @@ function ManageBOMDialog({ open, handleClose, product, allProducts = [] }) {
     With GST: ₹ {grandTotalWithGST}
   </Typography>
 </Box>
+          </Box>
          
         </Box>
 

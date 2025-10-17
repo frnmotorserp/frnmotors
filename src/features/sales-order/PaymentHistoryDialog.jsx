@@ -275,27 +275,16 @@ export default function PaymentHistoryDialog({
                     <TableCell>{p.transactionReference || "-"}</TableCell>
                     <TableCell>{p.paymentNotes || "-"}</TableCell>
                     {/* <TableCell>{p.updatedByName || "-"}</TableCell> */}
-                    {/*<TableCell>
-                      {dayjs().diff(dayjs(p.paymentDate), "day") <= 7  && <IconButton onClick={() => handleEdit(p)}>
+                    <TableCell>
+                      {/*dayjs().diff(dayjs(p.paymentDate), "day") <= 7  && <IconButton onClick={() => handleEdit(p)}>
                         <Edit />
-                      </IconButton>}
+                      </IconButton>*/}
                       { dayjs().diff(dayjs(p.paymentDate), "day") <= 7 && <IconButton
                         color="error"
                         onClick={() => handleDelete(p.paymentId)}
                       >
                         <Delete />
                       </IconButton>}
-                    </TableCell>*/}
-                     <TableCell>
-                      <IconButton onClick={() => handleEdit(p)}>
-                        <Edit />
-                      </IconButton>
-                     <IconButton
-                        color="error"
-                        onClick={() => handleDelete(p.paymentId)}
-                      >
-                        <Delete />
-                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}

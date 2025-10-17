@@ -8,6 +8,8 @@ import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import PageWrapper from '../layouts/PageWrapper';
 import { useUI } from '../context/UIContext';
+import { getProductCategoryListService } from '../services/productCategoryServices';
+
 import { getAllProductsService } from '../services/productService';
 import { getAllLocationListService } from '../services/locationService';
 import { getAllInventoryIssuesService } from '../services/inventoryServices';
@@ -23,6 +25,7 @@ function InventoryIssuePage() {
   const [locationList, setLocationList] = useState([]);
   const [issues, setIssues] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [productCategoryList, setProductCategoryList] = useState([]);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [startDate, setStartDate] = useState(dayjs().startOf('month').format('YYYY-MM-DD'));
   const [endDate, setEndDate] = useState(dayjs().format('YYYY-MM-DD'));
@@ -45,6 +48,26 @@ function InventoryIssuePage() {
   return Array.from(map.values());
 }, [productList]);
 
+  const getProductCategoryListAPICall = () => {
+    showLoader();
+    getProductCategoryListService()
+      .then(res => {
+        if (res && res.length > 0) {
+          setProductCategoryList(res);
+          //showSnackbar('Product Categories fetched successfully!', 'success');
+        } else {
+          setProductCategoryList([]);
+          showSnackbar('No Product Categories found!', 'warning');
+        }
+        hideLoader();
+      })
+      .catch(err => {
+        console.error('Error fetching Product Categories:', err);
+        setProductCategoryList([]);
+        hideLoader();
+        showSnackbar('Failed to fetch Product Categories!', 'error');
+      });
+  };
 
   const fetchInitialData = async () => {
     showLoader();
@@ -66,6 +89,7 @@ function InventoryIssuePage() {
       showSnackbar('Failed to load initial data', 'error');
     } finally {
       hideLoader();
+      getProductCategoryListAPICall()
     }
   };
 
@@ -150,6 +174,7 @@ function InventoryIssuePage() {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         products={productList}
+        productCategoryList={productCategoryList}
         locations={locationList}
         onSubmitSuccess={() => {
           fetchInitialData()

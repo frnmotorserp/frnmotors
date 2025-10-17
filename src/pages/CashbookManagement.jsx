@@ -4,6 +4,7 @@ import {
   DialogTitle, DialogContent, IconButton, Table, TableHead,
   TableRow, TableCell, TableBody, Paper, TableContainer, MenuItem
 } from '@mui/material';
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import AddIcon from '@mui/icons-material/Add';
@@ -14,16 +15,18 @@ import { getAcceessMatrix } from '../utils/loginUtil';
 import PageWrapper from '../layouts/PageWrapper';
 import { useUI } from '../context/UIContext';
 import { addCashEntryService, updateCashEntryService, getCashEntriesService, deleteCashEntryService, getCashBalanceService } from '../services/invoicePaymentsService';
-
+import * as XLSX from "xlsx";
+import { listAllExpenseCategories } from '../services/invoicePaymentsService';
 
 // Inside CashbookManagement component, just above the return statement
-const CashEntryForm = ({ entry, onClose, onSaved }) => {
+const CashEntryForm = ({ entry, onClose, onSaved, expenseCategoryList = [] }) => {
   const { showSnackbar, showLoader, hideLoader } = useUI();
   const [form, setForm] = useState({
     entry_date: entry?.entry_date || dayjs().format("YYYY-MM-DD"),
     description: entry?.description || "",
     amount: entry?.amount || "",
     entry_type: entry?.entry_type || "IN",
+    expense_category: entry?.expense_category_id || "",
   });
 
   const handleChange = (e) => {
@@ -38,6 +41,10 @@ const CashEntryForm = ({ entry, onClose, onSaved }) => {
     }
     if (!form.description.trim()) {
       showSnackbar("Description is required", "error");
+      return;
+    }
+    if (!form.expense_category) {
+      showSnackbar("Payment Category is required", "error");
       return;
     }
 
@@ -113,6 +120,25 @@ const CashEntryForm = ({ entry, onClose, onSaved }) => {
           </Typography>
         </MenuItem>
       </TextField>
+          <TextField
+              label="Payment Category"
+              name="expense_category"
+               sx={{ minWidth: 200 }}
+              size="small"
+              select
+              value={form.expense_category}
+              onChange={handleChange}
+              fullWidth
+            >
+              {expenseCategoryList?.map((cat) => (
+                <MenuItem
+                  value={cat.expenseCategoryId}
+                  sx={{ color: "green", fontWeight: "bold" }}
+                >
+                  {cat.expenseCategoryName}
+                </MenuItem>
+              ))}
+            </TextField>
 
       <Box display="flex" justifyContent="flex-end" mt={2} gap={1}>
         <Button onClick={onClose} variant="outlined" color="secondary">Cancel</Button>
@@ -131,9 +157,12 @@ const CashbookManagement = () => {
 
   const [entries, setEntries] = useState([]);
   const [balance, setBalance] = useState(0);
+  const [expenseCategoryList, setExpenseCategoryList] = useState([]);
   const [filters, setFilters] = useState({
     startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
     endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
+    expenseCategoryId: 0,
+    expenseCategoryName: 'All'
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState('');
@@ -141,14 +170,82 @@ const CashbookManagement = () => {
   const [editingEntry, setEditingEntry] = useState(null);
   const [accessMatrix, setAccessMatrix] = useState({});
 
+    const getExpenseCategoryListAPICall = (hideSnackbar) => {
+      showLoader();
+      listAllExpenseCategories()
+        .then((res) => {
+          if (res && res.length > 0) {
+            setExpenseCategoryList(res);
+            !hideSnackbar &&
+              showSnackbar("Expense Categories fetched successfully!", "success");
+          } else {
+            setExpenseCategoryList([]);
+            !hideSnackbar &&
+              showSnackbar("No Expense Categories found!", "warning");
+          }
+          hideLoader();
+        })
+        .catch((err) => {
+          console.error("Error fetching Expense Categories:", err);
+          setExpenseCategoryList([]);
+          hideLoader();
+          !hideSnackbar &&
+            showSnackbar("Failed to fetch Expense Categories!", "error");
+        });
+    };
+
   useEffect(() => {
     fetchEntries();
     fetchBalance();
+    getExpenseCategoryListAPICall(true)
     const access = getAcceessMatrix('Inventory Management', 'Cashbook Management');
     setAccessMatrix(access);
   }, []);
 
 
+  const handleExcelDownload = () => {
+  if (!entries.length) return;
+
+  //  Compute opening and closing balances
+  const totalIn = entries
+    .filter(e => e.entry_type === "IN")
+    .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+  const totalOut = entries
+    .filter(e => e.entry_type === "OUT")
+    .reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+
+
+
+  // Prepare data for Excel
+  const excelData = [
+    ["Cashbook Report"],
+    [`From: ${filters.startDate} To: ${filters.endDate}`],
+    [`Payment Category: ${filters.expenseCategoryName}`],
+    [""],
+    ["Total In", totalIn],
+    ["Total Out", totalOut],
+    [""],
+    ["#", "Date", "Description", "Type", "Amount (₹)"],
+    ...entries.map((e, i) => [
+      i + 1,
+      dayjs(e.entry_date).format("DD MMM YYYY"),
+      e.description,
+      e.entry_type === "IN" ? "Cash In" : "Cash Out",
+      e.amount
+    ]),
+    [""],
+    ["Total Cash In", totalIn],
+    ["Total Cash Out", totalOut],
+  ];
+
+  // Create worksheet & workbook
+  const ws = XLSX.utils.aoa_to_sheet(excelData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Cashbook");
+
+  // Download file
+  XLSX.writeFile(wb, `Cashbook_${filters.startDate}_to_${filters.endDate}.xlsx`);
+};
 
   const fetchEntries = () => {
     if (!filters.startDate || !filters.endDate) {
@@ -162,9 +259,12 @@ const CashbookManagement = () => {
 
     setError('');
     showLoader();
-    getCashEntriesService(filters.startDate, filters.endDate)
+    getCashEntriesService(filters.startDate, filters.endDate, filters.expenseCategoryId)
       .then(res => setEntries(res || []))
-      .catch(() => showSnackbar('Failed to fetch entries', 'error'))
+      .catch(() => {
+        setEntries([])
+        showSnackbar('Failed to fetch entries', 'error')
+      })
       .finally(() => hideLoader());
   };
 
@@ -237,6 +337,36 @@ const CashbookManagement = () => {
               />
             </Grid>
             <Grid item>
+                          <TextField
+                            select
+                            label="Payment Category"
+                            type="date"
+                            size="small"
+                            value={filters.expenseCategoryId}
+                            onChange={(e) =>
+                              setFilters((prev) => ({
+                                ...prev,
+                                expenseCategoryId: e.target.value,
+                                expenseCategoryName: expenseCategoryList?.find(x => x.expenseCategoryId === e.target.value)?.expenseCategoryName || "All"
+                              }))
+                            }
+                            InputLabelProps={{ shrink: true }}
+                          >
+                            <MenuItem value={0} sx={{ color: "green", fontWeight: "bold" }}>
+                              All
+                            </MenuItem>
+            
+                            {expenseCategoryList?.map((cat) => (
+                              <MenuItem
+                                value={cat.expenseCategoryId}
+                                sx={{ color: "green", fontWeight: "bold" }}
+                              >
+                                {cat.expenseCategoryName}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        </Grid>
+            <Grid item>
               <Button variant="contained" onClick={fetchEntries}>
                 Get Entries
               </Button>
@@ -287,7 +417,13 @@ const CashbookManagement = () => {
             </Typography>
           </Box>
 
-          {entries.length > 0 &&
+          
+        </Box>
+
+        </Box>
+      
+        <Box sx={{display: 'flex', justifyContent: 'flex-end', gap: 2}}>
+         {entries.length > 0 &&
             <TextField
               size="small"
               placeholder="Search Description"
@@ -296,10 +432,19 @@ const CashbookManagement = () => {
               InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
               sx={{ minWidth: 200 }}
             />}
-        </Box>
+
+             {entries && entries?.length > 0 &&  <Button
+            variant="outlined"
+            color="success"
+            onClick={handleExcelDownload}
+            disabled={!entries.length}
+            sx={{ mb: 2 }}
+            startIcon={<FileDownloadIcon />}
+          >
+            Download Excel
+          </Button>}
 
         </Box>
-      
 
         {/* Table View */}
         <TableContainer component={Paper} elevation={4} sx={{ borderRadius: 3, mt: 2 }}>
@@ -309,7 +454,9 @@ const CashbookManagement = () => {
                 <TableCell>#</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell>Description</TableCell>
+                 <TableCell align="right">Category</TableCell>
                 <TableCell align="right">Type</TableCell>
+               
                 <TableCell align="right">Amount (₹)</TableCell>
               </TableRow>
             </TableHead>
@@ -333,6 +480,7 @@ const CashbookManagement = () => {
                     <TableCell>{idx + 1}</TableCell>
                     <TableCell>{dayjs(row.entry_date).format("DD MMM YYYY")}</TableCell>
                     <TableCell>{row.description}</TableCell>
+                    <TableCell>{row.expense_category_name}</TableCell>
                     <TableCell align="right">
                       <Typography
                         fontWeight={600}
@@ -353,7 +501,7 @@ const CashbookManagement = () => {
                 ))}
               {/* Totals row */}
               <TableRow >
-                <TableCell colSpan={3} />
+                <TableCell colSpan={4} />
 
                 <TableCell
                   align="right"
@@ -405,6 +553,7 @@ const CashbookManagement = () => {
             </DialogTitle>
             <DialogContent dividers>
               <CashEntryForm
+                expenseCategoryList={expenseCategoryList || []}
                 entry={editingEntry}
                 onClose={handleDialogClose}
                 onSaved={() => {
@@ -421,4 +570,3 @@ const CashbookManagement = () => {
 };
 
 export default CashbookManagement;
-

@@ -127,7 +127,7 @@ function InventoryAdjustmentPage() {
           <Grid item xs={12} sm={4}>
           <Autocomplete
   options={productList}
-  getOptionLabel={(option) => option.productName || ''}
+  getOptionLabel={(option) => `${option.productName} (${option?.productCategoryName})` || ''}
   value={productList.find(p => p.productId === selectedProductId) || null}
   onChange={(event, newValue) => setSelectedProductId(newValue ? newValue.productId : '')}
   size="small"

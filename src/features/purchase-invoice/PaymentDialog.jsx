@@ -272,7 +272,7 @@ const PaymentDialog = ({ invoice, onClose, mode }) => {
                                 <TableCell>{p.transaction_reference}</TableCell>
                                 <TableCell>{p.payment_notes}</TableCell>
                                 {mode != 'view' && <TableCell align="center">
-                                    <IconButton size="small" onClick={() => handleEdit(idx)}><EditIcon fontSize="small" /></IconButton>
+                                    {/* <IconButton size="small" onClick={() => handleEdit(idx)}><EditIcon fontSize="small" /></IconButton> */}
                                     <IconButton size="small" onClick={() => handleDelete(idx)} color="error"><DeleteIcon fontSize="small" /></IconButton>
                                 </TableCell>}
                             </TableRow>

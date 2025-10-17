@@ -33,6 +33,36 @@ export async function getInvoicesByFilterService(startDate, endDate, vendorId = 
     }
   });
 }
+export async function getVendorInvoicesWithPaymentsFYService(vendorId = 0) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId
+        },
+     
+        vendorId
+ 
+      };
+
+      const response = await axiosPost("/invoice/getVendorInvoicesWithPaymentsFY", requestBody);
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to fetch invoice list");
+      }
+
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 /**
  * Add or update an invoice
@@ -220,7 +250,7 @@ export async function addCashEntryService(entry) {
           userId: user?.userId,
           userName: user?.loginId,
         },
-        ...entry, // { entry_date, description, amount, entry_type }
+        ...entry, // { entry_date, description, amount, entry_type, expense_category }
       };
 
       const response = await axiosPost("/invoice/createCashEntry", requestBody);
@@ -302,14 +332,14 @@ export async function deleteCashEntryService(id) {
 /**
  * Get cash entries with optional date range
  */
-export async function getCashEntriesService(startDate, endDate) {
+export async function getCashEntriesService(startDate, endDate, expenseCategoryId = 0) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
       const user = getUserDetailsObj();
 
       // API expects query params for startDate and endDate
-      const queryParams = `?startDate=${startDate || ""}&endDate=${endDate || ""}`;
+      const queryParams = `?startDate=${startDate || ""}&endDate=${endDate || ""}&expenseCategoryId=${expenseCategoryId}`;
 
       const requestBody = {
         token,
@@ -361,3 +391,174 @@ export async function getCashBalanceService() {
     }
   });
 }
+
+
+/**
+ * 1. Create a new bank transaction
+ * @param {Object} transaction - { bank_id, transaction_date, transaction_type, reference_no, narration, amount, mode_of_transaction, remarks }
+ */
+export async function createBankTransactionService(transaction) {
+  try {
+    const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      },
+      ...transaction,
+      created_by: user?.userId
+    };
+
+    const response = await axiosPost("/invoice/createBankTransaction", requestBody);
+    //console.log(response, response?.data?.success && response?.data?.data?.transaction_id)
+    if (response?.data?.success && response?.data?.data?.transaction_id) {
+      return response?.data?.data?.transaction_id;
+    } else {
+      throw new Error(response?.data?.message || "Failed to create bank transaction");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * 2. List bank transactions for a bank within optional date range
+ * @param {number} bankId
+ * @param {string} startDate - format YYYY-MM-DD
+ * @param {string} endDate - format YYYY-MM-DD
+ */
+export async function listBankTransactionsService(bankId, startDate = "", endDate = "", expenseCategoryId = 0) {
+  try {
+    const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      },
+      bank_id: bankId,
+      startDate,
+      endDate,
+      expenseCategoryId
+    };
+
+    const response = await axiosPost("/invoice/listBankTransactions", requestBody);
+
+    if (response?.status && response?.data) {
+      return response.data || [];
+    } else {
+      throw new Error(response?.data?.message || "Failed to fetch bank transactions");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * 3. Get current balance for a specific bank account
+ * @param {number} bankId
+ */
+export async function fetchBankBalanceService(bankId) {
+  try {
+    const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      },
+      bankId
+    };
+
+    const response = await axiosPost("/invoice/fetchBankBalance", requestBody);
+
+    if (response?.status && response?.data) {
+      return response.data?.balance || 0;
+    } else {
+      throw new Error(response?.data?.message || "Failed to fetch bank balance");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+export async function getAllBanks() {
+  try {
+    const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      }
+    };
+
+    const response = await axiosPost("/invoice/getBanks", requestBody);
+
+    if (response?.status && response?.data) {
+      return response.data || [];
+    } else {
+      throw new Error(response?.data?.message || "Failed to fetch bank balance");
+    }
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// List All Expense Categories
+export const listAllExpenseCategories = async () => {
+  try {
+     const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      }
+    };
+    const response = await axiosPost("/invoice/listAllExpenseCategories", requestBody);
+    if (response?.data?.status) {
+      return response.data.responseObject || [];
+    } else {
+      console.error("Error fetching expense categories:", response?.data?.message);
+      return [];
+    }
+  } catch (error) {
+    console.error("Error fetching expense categories:", error);
+    throw error;
+  }
+};
+
+// Save or Update Expense Category
+export const saveOrUpdateExpenseCategory = async (payload) => {
+  try {
+     const token = getJWTToken();
+    const user = getUserDetailsObj();
+
+    const requestBody = {
+      token,
+      dataAccessDTO: {
+        userId: user?.userId,
+        userName: user?.loginId
+      },
+       userId: user?.userId,
+      ...payload
+    };
+    const response = await axiosPost("/invoice/saveOrUpdateExpenseCategory", requestBody);
+    return response.data;
+  } catch (error) {
+    console.error("Error saving/updating expense category:", error);
+    throw error;
+  }
+};

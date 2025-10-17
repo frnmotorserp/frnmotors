@@ -6,6 +6,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Grid';
 import Autocomplete from '@mui/material/Autocomplete';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
@@ -32,16 +33,16 @@ const generateIssueNumber = () => {
   return `ISS-${datePart}-${timePart}-${randomPart}`;
 };
 
-export default function InventoryIssueDialog({ open, onClose, products = [], locations, onSubmitSuccess }) {
+export default function InventoryIssueDialog({ open, onClose, products = [], locations, onSubmitSuccess, productCategoryList = [] }) {
   const { showLoader, hideLoader, showSnackbar } = useUI();
   const [issueDate, setIssueDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [location, setLocation] = useState(null);
   const [issuedTo, setIssuedTo] = useState('');
   const [remarks, setRemarks] = useState('');
-  const [items, setItems] = useState([{ product: null, quantity: '', serialNumbers: [], serialOptions: [] }]);
+  const [items, setItems] = useState([{ category: null, product: null,  quantity: '', serialNumbers: [], serialOptions: [] }]);
 
   const handleAddItem = () => {
-    setItems([...items, { product: null, quantity: '' }]);
+    setItems([...items, { product: null, category: null, quantity: '' }]);
   };
 
   const handleRemoveItem = (index) => {
@@ -55,6 +56,13 @@ export default function InventoryIssueDialog({ open, onClose, products = [], loc
     updated[index][field] = value;
      const current = updated[index];
      console.log("current", current, location)
+        // Reset dependent fields
+    if (field === 'category') {
+      updated[index].product = null;
+      updated[index].serialNumbers = [];
+      updated[index].serialOptions = [];
+      updated[index].quantity = '';
+    }
     if(field === 'product' || field === 'quantity' ){
       console.log("current?.product?.serial_no_applicable", current,  current?.product?.serial_no_applicable)
       if(current?.product?.product_id && Number(current?.quantity || 0) > 0 && location && current?.product?.serial_no_applicable === true && !current?.serialOptions?.length){
@@ -160,7 +168,7 @@ export default function InventoryIssueDialog({ open, onClose, products = [], loc
     setLocation(null);
     setIssuedTo('');
     setRemarks('');
-    setItems([{ product: null, quantity: '', serialNumbers: [], serialOptions: [] }]);
+    setItems([{ product: null, quantity: '', serialNumbers: [], serialOptions: [], category: null, }]);
     onClose();
   };
 
@@ -227,18 +235,32 @@ export default function InventoryIssueDialog({ open, onClose, products = [], loc
         {!location ? <Typography variant='caption' color='error'>Please select a location first!</Typography> : 
         <Grid container spacing={2}>
           {items.map((item, idx) => (
-            <React.Fragment key={idx}>
+            <Box sx={{p:2, pt:0, my:2, backgroundColor: 'rgba(245, 245, 245, 1)', width: '100%', borderRadius: 2, ml: 2 }}>
+               <Typography variant='overline' fontWeight={'bold'}>Sl. {idx+1}</Typography>
+               <Grid container spacing={2} >
+
+              <Grid item xs={6}>
+                <Autocomplete
+                  size='small'
+                  options={productCategoryList}
+                  getOptionLabel={(opt) => opt.productCategoryName || ''}
+                  value={item.category}
+                  onChange={(e, val) => handleItemChange(idx, 'category', val)}
+                  renderInput={(params) => <TextField {...params} label="Category" />}
+                />
+              </Grid>
+
               <Grid item xs={6}>
                 <Autocomplete
                  size={'small'}
-                  options={products?.filter(x => x.location_id === location?.locationId)}
+                 options={products.filter(p => p.location_id === location.locationId && (!item.category || p.product_category_id === item.category.productCategoryId))}
                   getOptionLabel={(opt) => opt.product_name || ''}
                   value={item.product}
                   onChange={(e, val) => handleItemChange(idx, 'product', val)}
                   renderInput={(params) => <TextField {...params} label="Product" />}
                 />
               </Grid>
-              <Grid item xs={4}>
+              <Grid item xs={6}>
                 <TextField
                   size={'small'}
                   type="number"
@@ -255,18 +277,8 @@ export default function InventoryIssueDialog({ open, onClose, products = [], loc
                   helperText ={ item?.product ? `Available Stock : ${item?.product?.quantity || 0} ${item?.product?.unit}` : ''}
                 />
               </Grid>
-              <Grid item xs={2}>
-                <Button
-                  onClick={() => handleRemoveItem(idx)}
-                  color="error"
-                  variant="outlined"
-                  fullWidth
-                  disabled={items.length === 1}
-                >
-                  Remove
-                </Button>
-              </Grid>
-              {item?.product?.serial_no_applicable && <Grid item xs={12}>
+              
+              {item?.product?.serial_no_applicable && <Grid item xs={10}>
                 
                  <Autocomplete
                        multiple
@@ -294,7 +306,22 @@ export default function InventoryIssueDialog({ open, onClose, products = [], loc
                        )}
                      />
               </Grid>}
-            </React.Fragment>
+              <Grid item xs={2}>
+                <Button
+                  onClick={() => handleRemoveItem(idx)}
+                  color="error"
+                  variant="outlined"
+                  fullWidth
+                  disabled={items.length === 1}
+                >
+                  Remove
+                </Button>
+              </Grid>
+              
+            </Grid>
+
+            </Box>
+            
           ))}
         </Grid>}
 
