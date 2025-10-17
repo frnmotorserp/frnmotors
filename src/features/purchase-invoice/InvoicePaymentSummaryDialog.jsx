@@ -40,7 +40,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     const wsData = [];
     const fy = getFinancialYearText();
 
-    wsData.push([`Financial Year: ${fy}`]);
+    wsData.push([`From 2021-04-01 till today`]); 
     wsData.push([`Buyer/Vendor: ${buyerName}`]);
     wsData.push([]);
     wsData.push(["PO Number", "Invoice Number", "Invoice Date", "Total Invoice", "Total Paid", "Remaining", "Payment Date", "Payment Amount", "Payment Mode", "Reference", "Notes"]);
@@ -83,7 +83,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     ws["!cols"] = [{ wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 30 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Invoice Payment Summary");
-    XLSX.writeFile(wb, `Invoice_Payment_Summary_${fy}.xlsx`);
+    XLSX.writeFile(wb, `Invoice_Payment_Summary_From 2021-04-01 till today.xlsx`);
   };
 
   const summary = (() => {
@@ -97,7 +97,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box display="flex" gap={2} alignItems="center">
-          Invoice & Payment Summary for {buyerName} (FY {getFinancialYearText()})
+          Invoice & Payment Summary for {buyerName} (From 2021-04-01 till today)
           {data?.length > 0 && (
             <Button variant="outlined" onClick={exportToExcel} startIcon={<FileDownloadIcon />}>
               Download Excel
