@@ -33,7 +33,7 @@ const exportToExcel = (data, buyer, financialYear) => {
 
   const wsData = [];
 
-  wsData.push([`Financial Year: ${financialYear}`]);
+  wsData.push(['Data from 2021-04-01 till Today']);
   wsData.push([]);
   wsData.push(['Dealer/Customer Name', buyer]);
     wsData.push([]);
@@ -142,7 +142,7 @@ Object.keys(ws).forEach(cell => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Order & Payment History");
 
-  XLSX.writeFile(wb, `Order_Payment_History_${financialYear}.xlsx`);
+  XLSX.writeFile(wb, `Order_Payment_History_2021-04-01_till_today.xlsx`);
 };
 
 
@@ -206,7 +206,7 @@ export default function OrderPaymentHistoryDialog({ open, onClose, customerId, d
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box display={'flex'} gap={2} alignItems={'center'}>
-            Order & Payment History (FY {getFinancialYearText()})
+            Order & Payment History from 1st April 2021 till today
         { orders?.length > 0 && <Button variant="outlined"  onClick={() => {exportToExcel(orders || [], buyerName || "")}}  startIcon={<FileDownloadIcon />}>
                      Download Excel
         </Button> }
