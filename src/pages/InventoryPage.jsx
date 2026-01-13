@@ -9,9 +9,12 @@ import Checkbox from "@mui/material/Checkbox";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Grid from "@mui/material/Grid";
-import Visibility from '@mui/icons-material/Visibility';
+import Visibility from "@mui/icons-material/Visibility";
 import Button from "@mui/material/Button";
-import { getAllProductsService, saveOrUpdateProductService } from '../services/productService';
+import {
+  getAllProductsService,
+  saveOrUpdateProductService,
+} from "../services/productService";
 import SerialNumberDialog from "../features/inventory/SerialNumberDialog";
 import { getProductCategoryListService } from "../services/productCategoryServices";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -22,6 +25,111 @@ import { getAllLocationListService } from "../services/locationService";
 import InventorySummary from "../features/inventory/InventorySummary";
 import MissingProductsDialog from "../features/inventory/MissingProductsDialog";
 import { getProductSerialsService } from "../services/inventoryServices";
+import BackupTableIcon from "@mui/icons-material/BackupTable";
+
+import * as XLSX from "xlsx";
+
+export const exportInventoryReport = (inventoryList) => {
+  if (!inventoryList || !inventoryList.length) return;
+
+  // 1 Collect unique locations
+  const locations = [...new Set(inventoryList.map((i) => i.location_name))];
+
+  //  Group data by product
+  const productMap = {};
+
+  inventoryList.forEach((item) => {
+    if (!productMap[item.product_id]) {
+      productMap[item.product_id] = {
+        product_name: item.product_name,
+        low_stock_threshold: Number(item.low_stock_threshold),
+        unit: item.unit,
+        stocks: {},
+      };
+    }
+
+    productMap[item.product_id].stocks[item.location_name] = Number(
+      item.quantity
+    );
+  });
+
+  //  Build header row (dynamic)
+  const headerRow = [
+    "Product Name",
+    "Unit",
+    "Low Stock Threshold",
+    ...locations.flatMap((loc) => [`${loc} Qty`, `${loc} Low Stock?`]),
+    "Total Quantity",
+    "Total Low Stock?",
+  ];
+
+  const sheetData = [headerRow];
+
+  //  Build data rows
+  Object.values(productMap).forEach((product) => {
+    let totalQty = 0;
+    let isAnyLocationLow = false;
+
+    const row = [
+      product.product_name,
+      product.unit,
+      product.low_stock_threshold,
+    ];
+
+    locations.forEach((loc) => {
+      const qty = product.stocks[loc] || 0;
+      const isLow =
+        product.low_stock_threshold > 0 &&
+        qty > 0 &&
+        qty <= product.low_stock_threshold;
+      const notStockedFlag = !qty || qty === 0;
+
+      totalQty += qty;
+      if (isLow) isAnyLocationLow = true;
+
+      row.push(qty);
+      row.push(notStockedFlag ? "NOT STOCKED" : isLow ? "YES" : "NO");
+    });
+
+    row.push(totalQty);
+    row.push(
+      totalQty === 0
+        ? "NOT STOCKED"
+        : totalQty > 0 && totalQty <= product.low_stock_threshold
+        ? "YES"
+        : "NO"
+    );
+
+    sheetData.push(row);
+  });
+
+  //  Create worksheet
+  const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+
+  //  Fixed column widths
+  worksheet["!cols"] = [
+    { wch: 35 }, // Product Name
+    { wch: 12 }, // Unit
+    { wch: 22 }, // Low Stock Threshold
+    ...locations.flatMap(() => [
+      { wch: 22 }, // Location Qty
+      { wch: 25 }, // Low Stock?
+    ]),
+    { wch: 18 }, // Total Quantity
+    { wch: 20 }, // Total Low Stock?
+  ];
+
+  //  Create workbook & export
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Report");
+  let today = new Date();
+  XLSX.writeFile(
+    workbook,
+    `Inventory_Report_${today.getDate()}-${
+      today.getMonth() + 1
+    }-${today.getFullYear()}.xlsx`
+  );
+};
 
 const InventoryPage = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -42,63 +150,60 @@ const InventoryPage = () => {
   const [serialNumberProduct, setSerialNumberProduct] = useState({});
 
   const handleOpenMissingProductsDialog = () => {
-
     setOpenDialog(true);
   };
 
-
   const handleOpenSerialNumberDialog = (rowItem) => {
-    setSerialNumberProduct(rowItem || {})
+    setSerialNumberProduct(rowItem || {});
     setOpenSerailNumberDialog(true);
   };
 
   const getProductCategoryListAPICall = () => {
     showLoader();
     getProductCategoryListService()
-      .then(res => {
+      .then((res) => {
         if (res && res.length > 0) {
           setProductCategoryList(res);
           //showSnackbar('Product Categories fetched successfully!', 'success');
         } else {
           setProductCategoryList([]);
-          showSnackbar('No Product Categories found!', 'warning');
+          showSnackbar("No Product Categories found!", "warning");
         }
         hideLoader();
       })
-      .catch(err => {
-        console.error('Error fetching Product Categories:', err);
+      .catch((err) => {
+        console.error("Error fetching Product Categories:", err);
         setProductCategoryList([]);
         hideLoader();
-        showSnackbar('Failed to fetch Product Categories!', 'error');
+        showSnackbar("Failed to fetch Product Categories!", "error");
       });
   };
-
 
   const getProductListAPICall = (hideSnackbar) => {
     showLoader();
     getAllProductsService()
-      .then(res => {
+      .then((res) => {
         if (res && res.length > 0) {
           setProductList(res);
-          !hideSnackbar && showSnackbar('Products fetched successfully!', 'success');
+          !hideSnackbar &&
+            showSnackbar("Products fetched successfully!", "success");
         } else {
           setProductList([]);
-          !hideSnackbar && showSnackbar('No Products found!', 'warning');
+          !hideSnackbar && showSnackbar("No Products found!", "warning");
         }
         hideLoader();
       })
-      .catch(error => {
-        console.error('Error fetching Products:', error);
+      .catch((error) => {
+        console.error("Error fetching Products:", error);
         setProductList([]);
         hideLoader();
-        !hideSnackbar && showSnackbar('Failed to fetch Products!', 'error');
+        !hideSnackbar && showSnackbar("Failed to fetch Products!", "error");
       });
   };
 
-
   useEffect(() => {
     getLocationListAPICall(true);
-    getProductCategoryListAPICall()
+    getProductCategoryListAPICall();
     fetchInventory();
   }, []);
 
@@ -201,8 +306,8 @@ const InventoryPage = () => {
                 {option.locationId !== 0 && (
                   <>
                     <Typography variant="body2" color="text.secondary">
-                      {option.address}, {option.districtName}, {option.stateName} -{" "}
-                      {option.pincode}
+                      {option.address}, {option.districtName},{" "}
+                      {option.stateName} - {option.pincode}
                     </Typography>
                     <Typography variant="caption" color="text.disabled">
                       Type: {option.locationTypeNames?.join(", ")}
@@ -216,17 +321,19 @@ const InventoryPage = () => {
             )}
           />
           <Autocomplete
-  options={productCategoryList}
-  getOptionLabel={(option) => option.productCategoryName || ""}
-  isOptionEqualToValue={(option, value) => option.productCategoryId === value.productCategoryId}
-  value={selectedCategory}
-  onChange={(event, newValue) => setSelectedCategory(newValue)}
-  renderInput={(params) => <TextField {...params} label="Filter by Category" fullWidth />}
-/>
-
+            options={productCategoryList}
+            getOptionLabel={(option) => option.productCategoryName || ""}
+            isOptionEqualToValue={(option, value) =>
+              option.productCategoryId === value.productCategoryId
+            }
+            value={selectedCategory}
+            onChange={(event, newValue) => setSelectedCategory(newValue)}
+            renderInput={(params) => (
+              <TextField {...params} label="Filter by Category" fullWidth />
+            )}
+          />
 
           <FormGroup row>
-
             <FormControlLabel
               control={
                 <Checkbox
@@ -254,19 +361,65 @@ const InventoryPage = () => {
               }
               label="Available for Sale"
             />
-            <Button variant="outlined" size="small" onClick={handleOpenMissingProductsDialog} startIcon={<Visibility />}>View Products not stocked yet</Button>
-          </FormGroup>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleOpenMissingProductsDialog}
+              startIcon={<Visibility />}
+            >
+              View Products not stocked yet
+            </Button>
+            <Button
+              sx={{
+                ml: 2,
+              }}
+              variant="contained"
+              size="small"
+              onClick={() => {
+                const currentList = inventory?.filter((item) => {
+                  const locationMatch =
+                    !selectedLocation ||
+                    selectedLocation?.locationId === 0 ||
+                    item.location_id === selectedLocation?.locationId;
 
+                  const categoryMatch =
+                    !selectedCategory ||
+                    item.product_category_id ===
+                      selectedCategory.productCategoryId;
+
+                  const lowStockMatch =
+                    !lowStockOnly ||
+                    Number(item.quantity) <= Number(item.low_stock_threshold);
+
+                  const serialMatch =
+                    !serialNumberOnly || item.serial_no_applicable === true;
+
+                  const availableForSaleMatch =
+                    !availableForSale || item.is_available_for_sale === true;
+
+                  return (
+                    locationMatch &&
+                    lowStockMatch &&
+                    serialMatch &&
+                    availableForSaleMatch &&
+                    categoryMatch
+                  );
+                });
+                exportInventoryReport(currentList);
+              }}
+              startIcon={<BackupTableIcon />}
+            >
+              Export Report
+            </Button>
+          </FormGroup>
         </Stack>
       </Paper>
-
 
       {loading ? (
         <Box display="flex" justifyContent="center" mt={4}>
           <CircularProgress />
         </Box>
       ) : (
-
         <InventoryStockTable
           handleOpenSerialNumberDialog={handleOpenSerialNumberDialog}
           getInventoryStockListAPICall={fetchInventory}
@@ -276,8 +429,9 @@ const InventoryPage = () => {
               selectedLocation?.locationId === 0 ||
               item.location_id === selectedLocation?.locationId;
 
-               const categoryMatch =
-    !selectedCategory || item.product_category_id === selectedCategory.productCategoryId;
+            const categoryMatch =
+              !selectedCategory ||
+              item.product_category_id === selectedCategory.productCategoryId;
 
             const lowStockMatch =
               !lowStockOnly ||
@@ -306,7 +460,6 @@ const InventoryPage = () => {
         inventoryList={inventory}
         productList={productList}
         getProductListAPICall={getProductListAPICall}
-
       />
       <SerialNumberDialog
         open={openSerialNumberDialog}
@@ -314,7 +467,6 @@ const InventoryPage = () => {
         product={serialNumberProduct}
         serials={[]}
       />
-
     </Box>
   );
 };

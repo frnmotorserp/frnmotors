@@ -1,253 +1,581 @@
-import React, { useEffect, useState } from "react";
+// InvoicePaymentSummaryDialog with Tabs (Payment / Discount / Order)
+
+import React, { useEffect, useMemo, useState } from "react";
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
 import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
-import Chip from '@mui/material/Chip';
-import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
 import Button from '@mui/material/Button';
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import TextField from '@mui/material/TextField';
+import Chip from '@mui/material/Chip';
+import VendorPaymentFormDialog from "../vendor-payment-purchase/VendorPaymentFormDialog";
+import VendorDiscountFormDialog from "../vendor-payment-purchase/PartyDiscountFormDialog";
+
 import CloseIcon from "@mui/icons-material/Close";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import PaymentIcon from "@mui/icons-material/Payment";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import DiscountIcon from "@mui/icons-material/Discount";
+import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import AttachMoneyIcon from "@mui/icons-material/AttachMoney";
-import * as XLSX from "xlsx";
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import HistoryIcon from "@mui/icons-material/History";
+import BackupTableIcon from "@mui/icons-material/BackupTable";
+
+import { getAllBanks } from "../../services/invoicePaymentsService";
+import { getVendorPaymentsService } from "../../services/invoicePaymentsService";
+import { getVendorDiscountsService } from "../../services/invoicePaymentsService";
+
 import dayjs from "dayjs";
+import * as XLSX from "xlsx";
 
-export default function InvoicePaymentSummaryDialog({ open, onClose, data = [],  buyerName = "" }) {
-  const [groupedData, setGroupedData] = useState({});
+const autoFitColumns = (data) => {
+  const colWidths = [];
 
-  useEffect(() => {
-    if (open && data?.length) {
-      const grouped = data.reduce((acc, item) => {
-        if (!acc[item.po_number]) acc[item.po_number] = [];
-        acc[item.po_number].push(item);
-        return acc;
-      }, {});
-      setGroupedData(grouped);
-    }
-  }, [open, data]);
+  data.forEach((row) => {
+    row.forEach((cell, colIndex) => {
+      const cellValue = cell ? cell.toString() : "";
+      const cellLength = cellValue.length;
 
-  const getFinancialYearText = () => {
-    const today = dayjs();
-    const fyStart = today.month() >= 3 ? today.year() : today.year() - 1;
-    return `${fyStart}-${fyStart + 1}`;
-  };
-
-  const exportToExcel = () => {
-    const wsData = [];
-    const fy = getFinancialYearText();
-
-    wsData.push([`Details till today`]); 
-    wsData.push([`Buyer/Vendor: ${buyerName}`]);
-    wsData.push([]);
-    wsData.push(["PO Number", "Invoice Number", "Invoice Date", "Total Invoice", "Total Paid", "Remaining", "Payment Date", "Payment Amount", "Payment Mode", "Reference", "Notes"]);
-
-    data.forEach(inv => {
-      if (inv.payments && inv.payments.length) {
-        inv.payments.forEach(p => {
-          wsData.push([
-            inv.po_number,
-            inv.invoice_number,
-            dayjs(inv.invoice_date).format("YYYY-MM-DD"),
-            parseFloat(inv.total_invoice_amount).toFixed(2),
-            parseFloat(inv.total_paid).toFixed(2),
-            parseFloat(inv.total_remaining).toFixed(2),
-            p.payment_date,
-            p.payment_amount,
-            p.payment_mode,
-            p.transaction_reference,
-            p.payment_notes
-          ]);
-        });
+      if (!colWidths[colIndex]) {
+        colWidths[colIndex] = cellLength;
       } else {
-        wsData.push([
-          inv.po_number,
-          inv.invoice_number,
-          dayjs(inv.invoice_date).format("YYYY-MM-DD"),
-          parseFloat(inv.total_invoice_amount).toFixed(2),
-          parseFloat(inv.total_paid).toFixed(2),
-          parseFloat(inv.total_remaining).toFixed(2),
-          "",
-          "",
-          "",
-          "",
-          ""
-        ]);
+        colWidths[colIndex] = Math.max(colWidths[colIndex], cellLength);
       }
     });
+  });
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws["!cols"] = [{ wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 30 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Invoice Payment Summary");
-    XLSX.writeFile(wb, `Invoice Payment Summary till today.xlsx`);
+  return colWidths.map((width) => ({
+    wch: Math.min(width + 2, 40), // padding + max width cap
+  }));
+};
+
+function stringToPastelColor(text, alpha = 0.2) {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = text.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  const r = ((hash & 0xff) % 128) + 64;
+  const g = (((hash >> 8) & 0xff) % 128) + 64;
+  const b = (((hash >> 16) & 0xff) % 128) + 64;
+
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/**
+ * Props expected:
+ * open, onClose
+ * orders: []                // order list
+ * discounts: []             // party discounts
+ * vendorName: string
+ */
+export default function InvoicePaymentSummaryDialog({
+  open,
+  onClose,
+  orders = [],
+
+  vendorName = "",
+  vendorId,
+}) {
+  const [activeTab, setActiveTab] = useState(0);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [allBanks, setAllBanks] = useState([]);
+  const [openInvoicePaymentSummaryDialog, setOpenInvoicePaymentSummaryDialog] =
+    useState(false);
+
+  const [payments, setPayments] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  const [openVendorDiscountDialog, setOpenVendorDiscountDialog] =
+    useState(false);
+  const [discounts, setDiscounts] = useState([]);
+  const [loadingDiscounts, setLoadingDiscounts] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setActiveTab(0);
+      setPaymentSearch("");
+    }
+    if (open && vendorId) {
+      fetchBankswithBalance();
+      fetchVendorPayments();
+      fetchVendorDiscounts();
+    }
+  }, [open, vendorId]);
+
+  const fetchVendorDiscounts = () => {
+    if (!vendorId) return;
+
+    setLoadingDiscounts(true);
+    getVendorDiscountsService({ vendorId })
+      .then((res) => {
+        setDiscounts(res || []);
+      })
+      .catch(() => {
+        showSnackbar("Failed to fetch vendor discounts", "error");
+        setDiscounts([]);
+      })
+      .finally(() => setLoadingDiscounts(false));
   };
 
-  const summary = (() => {
-    const totalInvoice = data.reduce((sum, d) => sum + Number(d.total_invoice_amount || 0), 0);
-    const totalPaid = data.reduce((sum, d) => sum + Number(d.total_paid || 0), 0);
-    const totalRemaining = totalInvoice - totalPaid;
-    return { totalInvoice, totalPaid, totalRemaining };
-  })();
+  const fetchVendorPayments = () => {
+    setLoadingPayments(true);
+
+    getVendorPaymentsService({
+      vendorId,
+    })
+      .then((res) => {
+        setPayments(res || []);
+      })
+      .catch(() => {
+        showSnackbar("Failed to fetch vendor payments", "error");
+        setPayments([]);
+      })
+      .finally(() => {
+        setLoadingPayments(false);
+      });
+  };
+
+  const fetchBankswithBalance = () => {
+    //showLoader();
+    getAllBanks()
+      .then((res) => {
+        setAllBanks(res?.data || []);
+        console.log("Banks::::", res?.data);
+      })
+      .catch(() => {
+        showSnackbar("Failed to fetch banks with balance", "error");
+        setAllBanks([]);
+      })
+      .finally(() => {
+        //hideLoader();
+      });
+  };
+
+  /* ===================== SUMMARY ===================== */
+  const summary = useMemo(() => {
+    const totalOrders = orders.length;
+    const totalOrderValue = orders.reduce(
+      (sum, o) => sum + Number(o.total_invoice_amount || 0),
+      0
+    );
+    const totalPaid = payments.reduce(
+      (sum, p) => sum + Number(p.payment_amount || 0),
+      0
+    );
+    const totalDiscount = discounts.reduce(
+      (sum, d) => sum + Number(d.discount_amount || 0),
+      0
+    );
+
+    return {
+      totalOrders,
+      totalOrderValue,
+      totalPaid,
+      totalDiscount,
+      totalRemaining: totalOrderValue - totalPaid - totalDiscount,
+    };
+  }, [orders, payments, discounts]);
+
+  /* ===================== FILTERED PAYMENTS ===================== */
+  const filteredPayments = useMemo(() => {
+    if (!paymentSearch) return payments;
+
+    const q = paymentSearch.toLowerCase();
+    return payments.filter((p) =>
+      [
+        p.payment_method,
+        p.bank_name,
+        p.transaction_reference,
+        p.payment_amount,
+        p.account_number,
+        p.payment_date,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [payments, paymentSearch]);
+
+  /* ===================== EXPORT ===================== */
+  const exportToExcel = () => {
+    const wsSummary = [
+      ["Order & Payment Summary"],
+      [],
+      ["Vendor Name", vendorName],
+      [],
+      [
+        "Total Orders",
+        "Total Order Value",
+        "Total Paid",
+        "Total Discount",
+        "Total Remaining",
+      ],
+      [
+        summary.totalOrders,
+        summary.totalOrderValue.toFixed(2),
+        summary.totalPaid.toFixed(2),
+        summary.totalDiscount.toFixed(2),
+        summary.totalRemaining.toFixed(2),
+      ],
+    ];
+
+    const wsPayments = [
+      [
+        "Date",
+        "Method",
+        "Bank / Cash",
+        "Account",
+        "Reference",
+        "Amount",
+        "Notes",
+      ],
+    ];
+
+    payments.forEach((p) => {
+      wsPayments.push([
+        dayjs(p.payment_date).format("DD-MM-YYYY"),
+        p.payment_method,
+        p.payment_method === "BANK" ? p.bank_name : "Cash",
+        p.account_number || "-",
+        p.transaction_reference || "-",
+        Number(p.payment_amount).toFixed(2),
+        p.payment_notes || "-",
+      ]);
+    });
+    const wsDiscounts = [["SL. No.", "Date", "Reason", "Amount"]];
+    discounts.forEach((d, i) => {
+      wsDiscounts.push([
+        i + 1,
+
+        dayjs(d.discount_date).format("DD-MM-YYYY"),
+        d.reason,
+        Number(d.discount_amount).toFixed(2),
+      ]);
+    });
+
+    const wsOrders = [
+      ["SL. No.", "PO Number", "Invoice Number", "Invoice Date", "Grand Total"],
+    ];
+    orders.forEach((o, i) => {
+      wsOrders.push([
+        i + 1,
+        o.po_number,
+        o.invoice_number,
+        dayjs(o.invoice_date).format("DD-MM-YYYY"),
+        Number(o.total_invoice_amount).toFixed(2),
+      ]);
+    });
+
+    const wb = XLSX.utils.book_new();
+    const sheetSummary = XLSX.utils.aoa_to_sheet(wsSummary);
+    sheetSummary["!cols"] = autoFitColumns(wsSummary);
+
+    const sheetPayments = XLSX.utils.aoa_to_sheet(wsPayments);
+    sheetPayments["!cols"] = autoFitColumns(wsPayments);
+
+    const sheetDiscounts = XLSX.utils.aoa_to_sheet(wsDiscounts);
+    sheetDiscounts["!cols"] = autoFitColumns(wsDiscounts);
+
+    const sheetOrders = XLSX.utils.aoa_to_sheet(wsOrders);
+    sheetOrders["!cols"] = autoFitColumns(wsOrders);
+
+    XLSX.utils.book_append_sheet(wb, sheetSummary, "Summary");
+    XLSX.utils.book_append_sheet(wb, sheetPayments, "Payments");
+    XLSX.utils.book_append_sheet(wb, sheetDiscounts, "Discounts");
+    XLSX.utils.book_append_sheet(wb, sheetOrders, "Orders");
+    XLSX.writeFile(
+      wb,
+      `Order_Payment_Summary_${vendorName}_${dayjs(new Date()).format(
+        "DD-MM-YYYY"
+      )}.xlsx`
+    );
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <Dialog open={open} onClose={onClose} fullScreen>
+      {/* ===================== HEADER ===================== */}
+      <DialogTitle sx={{ display: "flex", justifyContent: "space-between" }}>
         <Box display="flex" gap={2} alignItems="center">
-          Invoice & Payment Summary for {buyerName} (till today)
-          {data?.length > 0 && (
-            <Button variant="outlined" onClick={exportToExcel} startIcon={<FileDownloadIcon />}>
-              Download Excel
+          Invoice & Payment Summary
+          {(orders.length > 0 || payments.length > 0) && (
+            <Button
+              variant="outlined"
+              startIcon={<BackupTableIcon />}
+              onClick={exportToExcel}
+            >
+              Export
             </Button>
           )}
+          <Button
+            color="warning"
+            variant="outlined"
+            onClick={() => setOpenVendorDiscountDialog(true)}
+          >
+            + Add Discount
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setOpenInvoicePaymentSummaryDialog(true);
+            }}
+          >
+            + Add Payment
+          </Button>
         </Box>
-        <IconButton onClick={onClose}><CloseIcon /></IconButton>
+        <IconButton onClick={onClose}>
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ background: "#fafafa" }}>
-        {data.length === 0 ? (
-          <Typography>No data available</Typography>
-        ) : (
-          <>
-            {/* Summary Cards */}
-            <Paper elevation={3} sx={{ p: 2, mb: 2, borderRadius: 2, background: "#fff" }}>
-              <Grid container spacing={2}>
-                {[
-                  {
-                    label: "Total Invoices",
-                    value: data.length,
-                    icon: <ShoppingCartIcon color="primary" fontSize="large" />
-                  },
-                  {
-                    label: "Total Invoice Amount",
-                    value: `₹${summary.totalInvoice.toLocaleString()}`,
-                    icon: <AttachMoneyIcon sx={{ color: "green" }} fontSize="large" />
-                  },
-                  {
-                    label: "Total Paid",
-                    value: `₹${summary.totalPaid.toLocaleString()}`,
-                    icon: <PaymentIcon sx={{ color: "teal" }} fontSize="large" />
-                  },
-                  {
-                    label: "Total Remaining",
-                    value: `₹${summary.totalRemaining.toLocaleString()}`,
-                    icon: <AccountBalanceWalletIcon sx={{ color: "red" }} fontSize="large" />
-                  }
-                ].map((item, i) => (
-                  <Grid item xs={12} sm={6} md={3} key={i}>
-                    <Box
-                      sx={{
-                        p: 2, borderRadius: 2, background: "#f9f9f9", boxShadow: 1,
-                        display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center"
-                      }}
-                    >
-                      {item.icon}
-                      <Typography variant="h6" sx={{ mt: 1 }}>{item.value}</Typography>
-                      <Typography variant="body2" color="text.secondary">{item.label}</Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-
-            {Number(summary.totalRemaining) < 0 &&<Paper elevation={3} sx={{ p: 2, mb: 2, borderRadius: 2, background: "#fdcdcdff" }}>
-                    You have overpaid this vendor! Please check your account correctly!
-                </Paper>}
-
-            {/* Accordion for each PO */}
-            {Object.entries(groupedData).map(([po, invoices]) => (
-              <Accordion key={po} sx={{ mb: 1, borderRadius: 2, boxShadow: 2 }}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Typography variant="caption" fontWeight="bold">
-                    Purchase Order No: {po}
+      <DialogContent dividers sx={{ backgroundColor: "#fafafa" }}>
+        {/* ===================== SUMMARY CARDS ===================== */}
+        <Paper elevation={3} sx={{ p: 2, mb: 2, borderRadius: 2 }}>
+          <Grid container spacing={2}>
+            {[
+              {
+                label: "Total Orders",
+                value: summary.totalOrders,
+                icon: <ShoppingCartIcon color="primary" />,
+              },
+              {
+                label: "Total Order Value",
+                value: `₹${summary.totalOrderValue.toLocaleString()}`,
+                icon: <AttachMoneyIcon sx={{ color: "green" }} />,
+              },
+              {
+                label: "Total Paid",
+                value: `₹${summary.totalPaid.toLocaleString()}`,
+                icon: <PaymentIcon sx={{ color: "teal" }} />,
+              },
+              {
+                label: "Total Discount by Vendor",
+                value: `₹${summary.totalDiscount.toLocaleString()}`,
+                icon: <DiscountIcon sx={{ color: "green" }} />,
+              },
+              {
+                label: "Total Remaining",
+                value: `₹${summary.totalRemaining.toLocaleString()}`,
+                icon: <AccountBalanceWalletIcon sx={{ color: "red" }} />,
+              },
+            ].map((item, i) => (
+              <Grid
+                item
+                xs={12}
+                sm={i === 4 ? 12 : 6}
+                md={i === 4 ? 8 : 4}
+                key={i}
+              >
+                <Box
+                  sx={{
+                    p: 2,
+                    background: "#fff",
+                    borderRadius: 2,
+                    boxShadow: 1,
+                    textAlign: "center",
+                  }}
+                >
+                  {item.icon}
+                  <Typography variant="h6" mt={1}>
+                    {item.value}
                   </Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {invoices.map((inv, i) => (
-                    <Paper key={i} sx={{ mb: 2, p: 2, borderRadius: 2, 
-                        background: Number(inv?.total_remaining || 0) === 0 ? "#edffe8ff"  : Number(inv?.total_remaining || 0) < 0 ? "#f5d8caff" : "#ffe8e8ff", 
-                    boxShadow: 1 }}>
-                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <Box>
-                          <Typography fontWeight="bold">Invoice: {inv.invoice_number}</Typography>
-                          <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
-                            <CalendarMonthIcon fontSize="small" />
-                            <Typography variant="body2">{dayjs(inv.invoice_date).format("DD-MM-YYYY")}</Typography>
-                          </Box>
-                        </Box>
-                        <Box textAlign="right">
-                          <Typography variant="body2" color="text.secondary">Invoice Total</Typography>
-                          <Typography variant="h6" color="primary">₹{Number(inv.total_invoice_amount).toLocaleString()}</Typography>
-                        </Box>
-                        <Box textAlign="right" ml={2}>
-                          <Typography variant="body2" color="text.secondary">Paid</Typography>
-                          <Typography variant="h6" color="success.main">₹{Number(inv.total_paid).toLocaleString()}</Typography>
-                        </Box>
-                        <Box textAlign="right" ml={2}>
-                          <Typography variant="body2" color="text.error">Remaining</Typography>
-                          <Typography variant="h6" color="error.main">₹{Number(inv.total_remaining).toLocaleString()}</Typography>
-                        </Box>
-                      </Box>
-
-                      <Table size="small" sx={{ mt: 2 }}>
-                        <TableHead>
-                          <TableRow>
-                            <TableCell><strong>Date</strong></TableCell>
-                            <TableCell align="right"><strong>Amount</strong></TableCell>
-                            <TableCell><strong>Mode</strong></TableCell>
-                            <TableCell><strong>Reference</strong></TableCell>
-                            <TableCell><strong>Notes</strong></TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {inv.payments?.filter(p => p.payment_id)?.length > 0 ? (
-                            inv.payments.map(p => (
-                              <TableRow key={p.payment_id}>
-                                <TableCell>{dayjs(p.payment_date).format("DD-MM-YYYY")}</TableCell>
-                                <TableCell align="right" sx={{ color: "#2e7d32", fontWeight: "bold" }}>₹{p.payment_amount?.toLocaleString()}</TableCell>
-                                <TableCell>
-                                  <Box display="flex" alignItems="center" gap={1}>
-                                    {p.payment_mode === "BANK_TRANSFER" ? <AccountBalanceIcon fontSize="small" /> : <PaymentIcon fontSize="small" />}
-                                    <Typography>{p.payment_mode}</Typography>
-                                  </Box>
-                                </TableCell>
-                                <TableCell>{p.transaction_reference}</TableCell>
-                                <TableCell>{p.payment_notes}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5}>
-                                <Typography variant="body2" color="text.secondary">No payments recorded.</Typography>
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </Paper>
-                  ))}
-                </AccordionDetails>
-              </Accordion>
+                  <Typography variant="body2" color="text.secondary">
+                    {item.label}
+                  </Typography>
+                </Box>
+              </Grid>
             ))}
-          </>
-        )}
+          </Grid>
+        </Paper>
+
+        {/* ===================== TABS ===================== */}
+        <Paper elevation={2} sx={{ borderRadius: 2 }}>
+          <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} centered>
+            <Tab icon={<PaymentIcon />} label="Payments" />
+            <Tab icon={<DiscountIcon />} label="Discounts" />
+            <Tab icon={<ReceiptLongIcon />} label="Orders" />
+          </Tabs>
+        </Paper>
+
+        <Box sx={{ p: 3 }}>
+          {/* ===================== PAYMENTS TAB ===================== */}
+          {activeTab === 0 && (
+            <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+              <Box display="flex" justifyContent="space-between" mb={2}>
+                <Typography variant="h6">Payment History</Typography>
+                <TextField
+                  size="small"
+                  placeholder="Search payments..."
+                  value={paymentSearch}
+                  onChange={(e) => setPaymentSearch(e.target.value)}
+                />
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              {loadingPayments ? (
+                <Box textAlign="center" py={6}>
+                  <Typography>Loading payments...</Typography>
+                </Box>
+              ) : filteredPayments.length === 0 ? (
+                <Box textAlign="center" py={6} opacity={0.6}>
+                  <HistoryIcon sx={{ fontSize: 48 }} />
+                  <Typography>No payments found</Typography>
+                </Box>
+              ) : (
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Method</TableCell>
+                      <TableCell>Bank / Cash</TableCell>
+                      <TableCell>Account</TableCell>
+                      <TableCell>Reference</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell>Notes</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {filteredPayments.map((p) => (
+                      <TableRow key={p.party_payment_id} hover>
+                        <TableCell>
+                          {dayjs(p.payment_date).format("DD-MM-YYYY")}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={p.payment_method}
+                            color={
+                              p.payment_method === "BANK" ? "info" : "success"
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {p.payment_method === "BANK" ? p.bank_name : "Cash"}
+                        </TableCell>
+                        <TableCell>{p.account_number || "-"}</TableCell>
+                        <TableCell>{p.transaction_reference || "-"}</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          ₹{Number(p.payment_amount).toLocaleString()}
+                        </TableCell>
+                        <TableCell>{p.payment_notes || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Paper>
+          )}
+
+          {/* ===================== DISCOUNTS TAB ===================== */}
+          {activeTab === 1 &&
+            (loadingDiscounts ? (
+              <Box textAlign="center" py={6}>
+                <Typography>Loading discounts...</Typography>
+              </Box>
+            ) : discounts.length === 0 ? (
+              <Typography>No discount records found</Typography>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Reason</TableCell>
+                    <TableCell align="right">Amount</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {discounts?.map((d) => (
+                    <TableRow key={d.sales_party_discount_id}>
+                      <TableCell>
+                        {dayjs(d.discount_date).format("DD-MM-YYYY")}
+                      </TableCell>
+                      <TableCell>{d.reason || "-"}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        ₹{Number(d.discount_amount).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ))}
+
+          {/* ===================== ORDERS TAB ===================== */}
+          {activeTab === 2 && (
+            <Paper elevation={2} sx={{ p: 2, borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell width={60}>SL No</TableCell>
+                    <TableCell>PO Number</TableCell>
+                    <TableCell>Invoice Number</TableCell>
+                    <TableCell>Invoice Date</TableCell>
+                    <TableCell align="right">Invoice Amount</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {orders.map((o, index) => (
+                    <TableRow
+                      key={`${o.po_number}-${o.invoice_number}`}
+                      sx={{ background: stringToPastelColor(o.po_number) }}
+                      hover
+                    >
+                      <TableCell>{index + 1}</TableCell>
+
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        {o.po_number || "-"}
+                      </TableCell>
+
+                      <TableCell>{o.invoice_number || "-"}</TableCell>
+
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={0.5}>
+                          <CalendarMonthIcon fontSize="small" />
+                          {dayjs(o.invoice_date).format("DD-MM-YYYY")}
+                        </Box>
+                      </TableCell>
+
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        ₹{Number(o.total_invoice_amount).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Paper>
+          )}
+        </Box>
       </DialogContent>
+      <VendorPaymentFormDialog
+        open={openInvoicePaymentSummaryDialog}
+        onClose={() => {
+          setOpenInvoicePaymentSummaryDialog(false);
+        }}
+        allBanks={allBanks}
+        vendorId={vendorId}
+        vendorName={vendorName}
+        fetchVendorPayments={fetchVendorPayments}
+      />
+      <VendorDiscountFormDialog
+        open={openVendorDiscountDialog}
+        onClose={() => setOpenVendorDiscountDialog(false)}
+        vendorId={vendorId}
+        vendorName={vendorName}
+        fetchVendorDiscounts={fetchVendorDiscounts}
+      />
     </Dialog>
   );
 }

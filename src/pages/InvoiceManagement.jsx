@@ -1,24 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Box, Grid, TextField, Button, Typography, Autocomplete,
-  Alert, Card, CardContent, CardActions, Chip, Dialog,
-  DialogTitle, DialogContent, IconButton
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import CloseIcon from '@mui/icons-material/Close';
-import AddIcon from '@mui/icons-material/Add';
-import Edit from '@mui/icons-material/Edit';
-import Visibility from '@mui/icons-material/Visibility';
-import dayjs from 'dayjs';
-import PageWrapper from '../layouts/PageWrapper';
-import { useUI } from '../context/UIContext';
-import { getAllVendorsService } from '../services/vendorService';
-import { getInvoicesByFilterService } from '../services/invoicePaymentsService';
-import { listAllPOsByVendorService } from '../services/purchaseOrderService';
-import { getAcceessMatrix } from '../utils/loginUtil';
-import { getAllProductsService } from '../services/productService';
-import InvoiceForm from '../features/purchase-invoice/InvoiceForm';
-import PaymentDialog from '../features/purchase-invoice/PaymentDialog';
+import React, { useEffect, useState } from "react";
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Autocomplete from '@mui/material/Autocomplete';
+import Alert from '@mui/material/Alert';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import AddIcon from "@mui/icons-material/Add";
+import Edit from "@mui/icons-material/Edit";
+import Visibility from "@mui/icons-material/Visibility";
+import dayjs from "dayjs";
+import PageWrapper from "../layouts/PageWrapper";
+import { useUI } from "../context/UIContext";
+import { getAllVendorsService } from "../services/vendorService";
+import { getInvoicesByFilterService } from "../services/invoicePaymentsService";
+import { listAllPOsByVendorService } from "../services/purchaseOrderService";
+import { getAcceessMatrix } from "../utils/loginUtil";
+import { getAllProductsService } from "../services/productService";
+import InvoiceForm from "../features/purchase-invoice/InvoiceForm";
+import PaymentDialog from "../features/purchase-invoice/PaymentDialog";
 
 // import PaymentDialog from '../features/invoice/PaymentDialog'; // Create this for payment tracking
 
@@ -30,29 +40,29 @@ const InvoiceManagement = () => {
   const [invoiceList, setInvoiceList] = useState([]);
   const [accessMatrix, setAccessMatrix] = useState({});
   const [filters, setFilters] = useState({
-    vendorId: '',
-    vendorName: '',
-    poId: '',
-    startDate: dayjs().startOf('month').format('YYYY-MM-DD'),
-    endDate: dayjs().endOf('month').format('YYYY-MM-DD'),
+    vendorId: "",
+    vendorName: "",
+    poId: "",
+    startDate: dayjs().startOf("month").format("YYYY-MM-DD"),
+    endDate: dayjs().endOf("month").format("YYYY-MM-DD"),
   });
-  const [searchQuery, setSearchQuery] = useState('');
-  const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState("");
   const [openPaymentDialog, setOpenPaymentDialog] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   const [openInvoiceDialog, setOpenInvoiceDialog] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState(null);
-  const [mode, setMode] = useState('create');
+  const [mode, setMode] = useState("create");
   const [productList, setProductList] = useState([]);
-
-
 
   useEffect(() => {
     fetchVendors();
-    const access = getAcceessMatrix('Inventory Management', 'Purchase Invoices and Payments');
+    const access = getAcceessMatrix(
+      "Inventory Management",
+      "Purchase Invoices and Payments"
+    );
     setAccessMatrix(access);
-
   }, []);
 
   const handleDialogOpen = (invoice = null) => {
@@ -65,7 +75,6 @@ const InvoiceManagement = () => {
     setOpenInvoiceDialog(false);
   };
 
-
   const fetchVendors = () => {
     showLoader();
     getAllVendorsService()
@@ -73,13 +82,13 @@ const InvoiceManagement = () => {
         if (res?.length) {
           setVendorList(res);
         } else {
-          showSnackbar('No vendors found', 'warning');
+          showSnackbar("No vendors found", "warning");
         }
       })
-      .catch(() => showSnackbar('Failed to fetch vendors', 'error'))
+      .catch(() => showSnackbar("Failed to fetch vendors", "error"))
       .finally(() => {
-        hideLoader()
-        getProductListAPICall(true)
+        hideLoader();
+        getProductListAPICall(true);
       });
   };
   const fetchALLPOsByVendors = (vendorId, vendorName) => {
@@ -87,61 +96,70 @@ const InvoiceManagement = () => {
     listAllPOsByVendorService(vendorId)
       .then((res) => {
         if (res?.length) {
-          const posWithAll = [{ po_id: '', po_number: 'All POs' }, ...(res || [])];
+          const posWithAll = [
+            { po_id: "", po_number: "All POs" },
+            ...(res || []),
+          ];
           setPoList(posWithAll);
         } else {
-          setPoList([])
-          showSnackbar(`No PO found under ${vendorName}`, 'warning');
+          setPoList([]);
+          showSnackbar(`No PO found under ${vendorName}`, "warning");
         }
       })
       .catch(() => {
-        setPoList([])
-        showSnackbar(`Failed to fetch POs under ${vendorName}`, 'error')
+        setPoList([]);
+        showSnackbar(`Failed to fetch POs under ${vendorName}`, "error");
       })
       .finally(() => {
-        hideLoader()
+        hideLoader();
       });
   };
 
   const getProductListAPICall = (hideSnackbar) => {
     showLoader();
     getAllProductsService()
-      .then(res => {
+      .then((res) => {
         if (res && res.length > 0) {
           setProductList(res);
-          !hideSnackbar && showSnackbar('Products fetched successfully!', 'success');
+          !hideSnackbar &&
+            showSnackbar("Products fetched successfully!", "success");
         } else {
           setProductList([]);
-          !hideSnackbar && showSnackbar('No Products found!', 'warning');
+          !hideSnackbar && showSnackbar("No Products found!", "warning");
         }
         hideLoader();
       })
-      .catch(error => {
-        console.error('Error fetching Products:', error);
+      .catch((error) => {
+        console.error("Error fetching Products:", error);
         setProductList([]);
         hideLoader();
-        !hideSnackbar && showSnackbar('Failed to fetch Products!', 'error');
+        !hideSnackbar && showSnackbar("Failed to fetch Products!", "error");
       });
   };
   const fetchInvoices = () => {
     if (!filters.vendorId || !filters.startDate || !filters.endDate) {
-      setError('Vendor and date range are required');
+      setError("Vendor and date range are required");
       return;
     }
 
     if (dayjs(filters.endDate).isBefore(filters.startDate)) {
-      setError('End date cannot be before start date');
+      setError("End date cannot be before start date");
       return;
     }
 
-    setError('');
+    setError("");
     showLoader();
-    getInvoicesByFilterService(filters.startDate, filters.endDate, filters.vendorId, filters.poId || 0)
+    getInvoicesByFilterService(
+      filters.startDate,
+      filters.endDate,
+      filters.vendorId,
+      filters.poId || 0
+    )
       .then((res) => {
         setInvoiceList(res || []);
-        if (!res?.length) showSnackbar('No invoices found', 'warning');
+        if (!res?.length) showSnackbar("No invoices found", "warning");
       })
-      .catch(() => showSnackbar('Failed to fetch invoices', 'error'))
+      .catch(() => showSnackbar("Failed to fetch invoices", "error"))
       .finally(() => hideLoader());
   };
 
@@ -152,39 +170,57 @@ const InvoiceManagement = () => {
   const openPaymentForm = (invoice, mode) => {
     setSelectedInvoice(invoice);
     setOpenPaymentDialog(true);
-    setMode(mode)
+    setMode(mode);
   };
 
   const ActionButtonsArr = [
     {
       showHeaderButton: true,
-      buttonText: 'Create Invoice',
-      buttonCallback: () => { handleDialogOpen() },
-      buttonIcon: <AddIcon fontSize='small' />,
+      buttonText: "Create Invoice",
+      buttonCallback: () => {
+        handleDialogOpen();
+      },
+      buttonIcon: <AddIcon fontSize="small" />,
       access: accessMatrix?.create ?? false,
-    }
+    },
   ];
   return (
-    <PageWrapper title="Purchase Invoice Management" actionButtons={ActionButtonsArr}>
+    <PageWrapper
+      title="Purchase Invoice Management"
+      actionButtons={ActionButtonsArr}
+    >
       <Box m={2}>
-
         <Box display="flex" flexDirection="column" alignItems="center" mt={2}>
-          <Grid container spacing={2} alignItems="center" justifyContent="center">
+          <Grid
+            container
+            spacing={2}
+            alignItems="center"
+            justifyContent="center"
+          >
             <Grid item>
               <Autocomplete
                 size="small"
                 options={vendorList}
-                getOptionLabel={(o) => o.vendorName || ''}
-                value={vendorList.find((v) => v.vendorId === filters.vendorId) || null}
+                getOptionLabel={(o) => o.vendorName || ""}
+                value={
+                  vendorList.find((v) => v.vendorId === filters.vendorId) ||
+                  null
+                }
                 onChange={(_, newValue) => {
-                  handleFilterChange('vendorId', newValue?.vendorId || '');
-                  handleFilterChange('vendorName', newValue?.vendorName || '');
-                  handleFilterChange('poId', '');
-                  handleFilterChange('poNumber', '');
+                  handleFilterChange("vendorId", newValue?.vendorId || "");
+                  handleFilterChange("vendorName", newValue?.vendorName || "");
+                  handleFilterChange("poId", "");
+                  handleFilterChange("poNumber", "");
 
-                  newValue?.vendorId && fetchALLPOsByVendors(newValue?.vendorId, newValue?.vendorName)
+                  newValue?.vendorId &&
+                    fetchALLPOsByVendors(
+                      newValue?.vendorId,
+                      newValue?.vendorName
+                    );
                 }}
-                renderInput={(params) => <TextField {...params} label="Vendor" />}
+                renderInput={(params) => (
+                  <TextField {...params} label="Vendor" />
+                )}
                 sx={{ minWidth: 180 }}
               />
             </Grid>
@@ -192,13 +228,15 @@ const InvoiceManagement = () => {
               <Autocomplete
                 size="small"
                 options={poList}
-                getOptionLabel={(o) => o.po_number || ''}
+                getOptionLabel={(o) => o.po_number || ""}
                 value={poList.find((p) => p.po_id === filters.poId) || null}
                 onChange={(_, newValue) => {
-                  handleFilterChange('poId', newValue?.po_id || '');
-                  handleFilterChange('poNumber', newValue?.po_number || '');
+                  handleFilterChange("poId", newValue?.po_id || "");
+                  handleFilterChange("poNumber", newValue?.po_number || "");
                 }}
-                renderInput={(params) => <TextField {...params} label="PO Number" />}
+                renderInput={(params) => (
+                  <TextField {...params} label="PO Number" />
+                )}
                 sx={{ minWidth: 180 }}
               />
             </Grid>
@@ -208,7 +246,9 @@ const InvoiceManagement = () => {
                 type="date"
                 size="small"
                 value={filters.startDate}
-                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("startDate", e.target.value)
+                }
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -218,7 +258,7 @@ const InvoiceManagement = () => {
                 type="date"
                 size="small"
                 value={filters.endDate}
-                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                onChange={(e) => handleFilterChange("endDate", e.target.value)}
                 InputLabelProps={{ shrink: true }}
               />
             </Grid>
@@ -236,22 +276,25 @@ const InvoiceManagement = () => {
           )}
         </Box>
 
-
-        {invoiceList.length > 0 && <Box sx={{ display: 'flex', justifyContent: 'end', mb: 2, mr: 1 }}>
-          <TextField
-            size="small"
-            placeholder="Search Invoice No."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
-            sx={{ minWidth: 200 }}
-          />
-        </Box>}
+        {invoiceList.length > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "end", mb: 2, mr: 1 }}>
+            <TextField
+              size="small"
+              placeholder="Search Invoice No."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
+              sx={{ minWidth: 200 }}
+            />
+          </Box>
+        )}
 
         <Grid container spacing={2}>
           {invoiceList
-            ?.filter(inv =>
-              inv.invoice_number?.toLowerCase().includes(searchQuery.toLowerCase())
+            ?.filter((inv) =>
+              inv.invoice_number
+                ?.toLowerCase()
+                .includes(searchQuery.toLowerCase())
             )
             ?.map((inv, idx) => (
               <Grid item xs={12} sm={6} md={4} key={inv.invoice_id}>
@@ -259,12 +302,13 @@ const InvoiceManagement = () => {
                   elevation={6}
                   sx={{
                     borderRadius: 4,
-                    transition: 'transform 0.25s ease-in-out',
-                    '&:hover': {
-                      transform: 'scale(1.03)',
-                      boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+                    transition: "transform 0.25s ease-in-out",
+                    "&:hover": {
+                      transform: "scale(1.03)",
+                      boxShadow: "0px 8px 24px rgba(0, 0, 0, 0.15)",
                     },
-                    background: 'linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)',
+                    background:
+                      "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
                   }}
                 >
                   <CardContent>
@@ -274,7 +318,8 @@ const InvoiceManagement = () => {
                       color="text.secondary"
                       gutterBottom
                     >
-                      #{idx + 1} — Invoice: <strong>{inv.invoice_number}</strong>
+                      #{idx + 1} — Invoice:{" "}
+                      <strong>{inv.invoice_number}</strong>
                     </Typography>
 
                     <Typography
@@ -283,7 +328,10 @@ const InvoiceManagement = () => {
                       color="primary"
                       sx={{ mb: 1 }}
                     >
-                      ₹ {Math.round(Number(inv.total_invoice_amount || 0))?.toLocaleString()}
+                      ₹{" "}
+                      {Math.round(
+                        Number(inv.total_invoice_amount || 0)
+                      )?.toLocaleString()}
                     </Typography>
 
                     <Box mb={1}>
@@ -294,40 +342,51 @@ const InvoiceManagement = () => {
                         PO Number: <strong>{inv.po_number}</strong>
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Date: {dayjs(inv.invoice_date).format('DD MMM YYYY')}
+                        Date: {dayjs(inv.invoice_date).format("DD MMM YYYY")}
                       </Typography>
                     </Box>
 
-                    <Box mt={2} display="flex" alignItems="center" justifyContent="space-between">
-                      <Chip
+                    <Box
+                      mt={2}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      {/* <Chip
                         size="small"
                         label={inv.payment_status}
                         color={
-                          inv.payment_status === 'PAID'
-                            ? 'success'
-                            : inv.payment_status === 'PARTIAL'
-                              ? 'warning'
-                              : inv.payment_status === 'OVERPAID' ? 'error' : 'default'
+                          inv.payment_status === "PAID"
+                            ? "success"
+                            : inv.payment_status === "PARTIAL"
+                            ? "warning"
+                            : inv.payment_status === "OVERPAID"
+                            ? "error"
+                            : "default"
                         }
                         variant="filled"
-                      />
+                      /> */}
                       <Typography variant="caption" color="text.secondary">
                         Tax: ₹ {inv.total_tax_amount}
                       </Typography>
                     </Box>
                   </CardContent>
 
-                  <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
-                    {accessMatrix?.create && <Button
-                      size="small"
-                      variant="outlined"
-                      color="success"
-                      startIcon={<Edit />}
-                      onClick={() => handleDialogOpen(inv)}
-                    >
-                      Edit
-                    </Button>}
-                    <Button
+                  <CardActions
+                    sx={{ justifyContent: "flex-end", px: 2, pb: 2 }}
+                  >
+                    {accessMatrix?.create && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="success"
+                        startIcon={<Edit />}
+                        onClick={() => handleDialogOpen(inv)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {/* <Button
                       size="small"
                       variant="contained"
                       color="secondary"
@@ -339,13 +398,13 @@ const InvoiceManagement = () => {
                       onClick={() => openPaymentForm(inv, 'create')}
                     >
                       Add/Edit Payments
-                    </Button>
+                    </Button> */}
                     <Button
                       size="small"
                       variant="outlined"
                       color="inherit"
                       startIcon={<Visibility />}
-                      onClick={() => openPaymentForm(inv, 'view')}
+                      onClick={() => openPaymentForm(inv, "view")}
                     >
                       View
                     </Button>
@@ -355,31 +414,47 @@ const InvoiceManagement = () => {
             ))}
         </Grid>
 
-
-
         {openPaymentDialog && (
-          <Dialog open={openPaymentDialog} onClose={() => setOpenPaymentDialog(false)} maxWidth="md" fullWidth>
+          <Dialog
+            open={openPaymentDialog}
+            onClose={() => setOpenPaymentDialog(false)}
+            maxWidth="md"
+            fullWidth
+          >
             <DialogTitle>
               Invoice & Payment Details
-              <IconButton onClick={() => setOpenPaymentDialog(false)} sx={{ position: 'absolute', right: 8, top: 8 }}>
+              <IconButton
+                onClick={() => setOpenPaymentDialog(false)}
+                sx={{ position: "absolute", right: 8, top: 8 }}
+              >
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
             <DialogContent>
               <DialogContent dividers>
-
-                <PaymentDialog mode={mode} invoice={selectedInvoice} onClose={() => setOpenPaymentDialog(false)} />
-
+                <PaymentDialog
+                  mode={mode}
+                  invoice={selectedInvoice}
+                  onClose={() => setOpenPaymentDialog(false)}
+                />
               </DialogContent>
             </DialogContent>
           </Dialog>
         )}
 
         {openInvoiceDialog && (
-          <Dialog open={openInvoiceDialog} onClose={handleDialogClose} maxWidth="md" fullWidth>
+          <Dialog
+            open={openInvoiceDialog}
+            onClose={handleDialogClose}
+            maxWidth="md"
+            fullWidth
+          >
             <DialogTitle>
-              {editingInvoice ? 'Edit Invoice' : 'Create Invoice'}
-              <IconButton onClick={handleDialogClose} sx={{ position: 'absolute', right: 8, top: 8 }}>
+              {editingInvoice ? "Edit Invoice" : "Create Invoice"}
+              <IconButton
+                onClick={handleDialogClose}
+                sx={{ position: "absolute", right: 8, top: 8 }}
+              >
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
@@ -397,7 +472,6 @@ const InvoiceManagement = () => {
             </DialogContent>
           </Dialog>
         )}
-
       </Box>
     </PageWrapper>
   );
