@@ -7,5 +7,5 @@
 //export const domainUrl = "https://frnmotorsbackend.onrender.com/api/";
 
 
-//Bandhu - Motors Test
+// Bandhu - Motors Test
 export const domainUrl = "https://frnmotorsbackend-axh3.onrender.com/api/";
