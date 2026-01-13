@@ -123,7 +123,7 @@ const PaymentDialog = ({ invoice, onClose, mode }) => {
                     <Typography><strong>PO No:</strong> {invoice.po_number}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                    <Typography><strong>Invoice Amount:</strong> ₹{invoice.invoice_amount}</Typography>
+                    <Typography><strong>Invoice Amount:</strong> ₹{Math.round(Number(invoice.invoice_amount || 0))}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
                     <Typography><strong>Total Tax:</strong> ₹{invoice.total_tax_amount}</Typography>
@@ -170,7 +170,7 @@ const PaymentDialog = ({ invoice, onClose, mode }) => {
                         Remaining Amount
                     </Typography>
                     <Typography variant="h6" sx={{ color: 'red' }}>
-                        ₹{(Number(invoice.total_invoice_amount || 0) - paymentList.reduce((sum, p) => sum + Number(p.payment_amount), 0)).toFixed(2)}
+                        ₹{(Math.round(Number(invoice.total_invoice_amount || 0)) - paymentList.reduce((sum, p) => sum + Number(p.payment_amount), 0)).toFixed(2)}
                     </Typography>
                 </Box>
             </Box>

@@ -1,9 +1,22 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography,
-  Accordion, AccordionSummary, AccordionDetails, Box, Table,
-  TableHead, TableRow, TableCell, TableBody, Chip, Paper, Grid, Button
-} from "@mui/material";
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import TableBody from '@mui/material/TableBody';
+import Chip from '@mui/material/Chip';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Button from '@mui/material/Button';
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import CloseIcon from "@mui/icons-material/Close";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -40,7 +53,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     const wsData = [];
     const fy = getFinancialYearText();
 
-    wsData.push([`From 2021-04-01 till today`]); 
+    wsData.push([`Details till today`]); 
     wsData.push([`Buyer/Vendor: ${buyerName}`]);
     wsData.push([]);
     wsData.push(["PO Number", "Invoice Number", "Invoice Date", "Total Invoice", "Total Paid", "Remaining", "Payment Date", "Payment Amount", "Payment Mode", "Reference", "Notes"]);
@@ -83,7 +96,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     ws["!cols"] = [{ wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 30 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Invoice Payment Summary");
-    XLSX.writeFile(wb, `Invoice_Payment_Summary_From 2021-04-01 till today.xlsx`);
+    XLSX.writeFile(wb, `Invoice Payment Summary till today.xlsx`);
   };
 
   const summary = (() => {
@@ -97,7 +110,7 @@ export default function InvoicePaymentSummaryDialog({ open, onClose, data = [], 
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Box display="flex" gap={2} alignItems="center">
-          Invoice & Payment Summary for {buyerName} (From 2021-04-01 till today)
+          Invoice & Payment Summary for {buyerName} (till today)
           {data?.length > 0 && (
             <Button variant="outlined" onClick={exportToExcel} startIcon={<FileDownloadIcon />}>
               Download Excel

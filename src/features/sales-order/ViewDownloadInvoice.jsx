@@ -44,7 +44,7 @@ const ViewDownloadInvoice = ({ open, handleClose, salesOrder, items, companyList
         <Close fontSize={'small'} onClick={handleClose} />
 
       </DialogTitle>
-      <DialogContent dividers style={{ maxHeight: '80vh' }}>
+      <DialogContent dividers style={{ maxHeight: '80vh', backgroundColor: 'rgba(216, 216, 216, 0.63)' }}>
         <Box sx={{ position: 'relative' }}>
           <Fab
             color="warning"

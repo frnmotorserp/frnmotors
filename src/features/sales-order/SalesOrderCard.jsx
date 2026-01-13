@@ -1,29 +1,28 @@
 import React, { useState } from "react";
-import Grid from '@mui/material/Grid';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
-import Button from '@mui/material/Button';
-import DisabledByDefaultIcon from '@mui/icons-material/DisabledByDefault';
+import Grid from "@mui/material/Grid";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
+import Button from "@mui/material/Button";
+import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import dayjs from "dayjs";
 
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
-import Collapse from '@mui/material/Collapse';
-import IconButton from '@mui/material/IconButton';
-import Divider from '@mui/material/Divider';
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+import Collapse from "@mui/material/Collapse";
+import IconButton from "@mui/material/IconButton";
+import Divider from "@mui/material/Divider";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import ReceiptIcon from '@mui/icons-material/Receipt';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
+import ReceiptIcon from "@mui/icons-material/Receipt";
+import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import PaymentsIcon from "@mui/icons-material/Payments";
 import ErrorIcon from "@mui/icons-material/Error";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-
 
 // Helper to get chip style by status
 const getPaymentStatusChip = (status) => {
@@ -71,7 +70,19 @@ const getPaymentStatusChip = (status) => {
   }
 };
 
-const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, handlePaymentDialogOpen, userIDUserNameMap, customerIDNameMap, dealerIDNameMap, fetchSalesOrderItems, handleViewDialogOpen, handleCancelOrderDialogOpen  }) => {
+const SalesOrderCard = ({
+  o,
+  index,
+  getStatusColor,
+  handleDownloadEInvoice,
+  handlePaymentDialogOpen,
+  userIDUserNameMap,
+  customerIDNameMap,
+  dealerIDNameMap,
+  fetchSalesOrderItems,
+  handleViewDialogOpen,
+  handleCancelOrderDialogOpen,
+}) => {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -86,7 +97,7 @@ const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, hand
           display: "flex",
           flexDirection: "column",
           "&:hover": { boxShadow: 6, transform: "translateY(-3px)" },
-          transition: "0.3s"
+          transition: "0.3s",
         }}
       >
         <CardContent sx={{ flexGrow: 1 }}>
@@ -100,11 +111,8 @@ const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, hand
 
           {/* Amount + Status */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <Typography
-              variant="h6"
-              sx={{ color: "#1565c0", fontWeight: 600 }}
-            >
-              ₹ {o.grand_total ?? "—"}
+            <Typography variant="h6" sx={{ color: "#1565c0", fontWeight: 600 }}>
+              ₹ {o.grand_total_rounded ?? "—"} {/*₹ {o.grand_total ?? "—"}*/}
             </Typography>
             <Chip
               size="small"
@@ -112,8 +120,6 @@ const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, hand
               label={o.status}
             />
           </Box>
-
-         
 
           {/* Collapsible Details */}
           <Box>
@@ -123,7 +129,17 @@ const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, hand
               {new Date(o.order_date).toLocaleDateString()}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {o.order_type == "DEALER" ? <><strong>Dealer Name:</strong> {dealerIDNameMap?.[o.dealer_id] || "-"}</> : <><strong>Customer Name:</strong> {customerIDNameMap?.[o.customer_id] || "-"} </> }
+              {o.order_type == "DEALER" ? (
+                <>
+                  <strong>Dealer Name:</strong>{" "}
+                  {dealerIDNameMap?.[o.dealer_id] || "-"}
+                </>
+              ) : (
+                <>
+                  <strong>Customer Name:</strong>{" "}
+                  {customerIDNameMap?.[o.customer_id] || "-"}{" "}
+                </>
+              )}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               <strong>Billing Address:</strong> {o.billing_address}
@@ -136,38 +152,70 @@ const SalesOrderCard = ({ o, index, getStatusColor, handleDownloadEInvoice, hand
             <Typography variant="body2" color="text.secondary">
               <strong>Payment Terms:</strong> {o.payment_terms}
             </Typography>
-           
+
             <Typography variant="body2" color="text.secondary">
-              <strong>Salesman Name:</strong> { (userIDUserNameMap &&  userIDUserNameMap[o?.booked_by_user_id]) || "-"}
+              <strong>Salesman Name:</strong>{" "}
+              {(userIDUserNameMap && userIDUserNameMap[o?.booked_by_user_id]) ||
+                "-"}
             </Typography>
-             <Box display="flex" alignItems="center" gap={1} mt={1}>
+            {/* <Box display="flex" alignItems="center" gap={1} mt={1}>
               <strong>Payment Status:</strong> {getPaymentStatusChip(o.payment_status)}
-            </Box>
+            </Box> */}
           </Box>
         </CardContent>
-        <CardActions sx={{display: 'flex', alignItems: 'flex-end', flexDirection: 'column', gap:2}}>
-           {o.status !== "CANCELLED" && 
-                 <Button color="success" startIcon={<FileDownloadIcon size= 'small' />} onClick={()=> { handleDownloadEInvoice(o.sales_order_id, o.sales_order_code)}}>
-                E-Invoice JSON
-            </Button>}
+        <CardActions
+          sx={{
+            display: "flex",
+            alignItems: "flex-end",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
           <Box>
-                {o.status !== "CANCELLED" && 
-                  dayjs().isBefore(dayjs(o.created_at).add(3, "day"))  && <Button variant="outlined" color="error" startIcon={<DisabledByDefaultIcon size= 'small' />} onClick={()=> { handleCancelOrderDialogOpen(o)}}>
+            {o.status !== "CANCELLED" && (
+              <Button
+                color="success"
+                startIcon={<FileDownloadIcon size="small" />}
+                onClick={() => {
+                  handleDownloadEInvoice(o.sales_order_id, o.sales_order_code);
+                }}
+              >
+                E-Invoice JSON
+              </Button>
+            )}
+            {o.status !== "CANCELLED" &&
+              dayjs().isBefore(dayjs(o.created_at).add(3, "day")) && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  startIcon={<DisabledByDefaultIcon size="small" />}
+                  onClick={() => {
+                    handleCancelOrderDialogOpen(o);
+                  }}
+                >
                   Cancel
-              </Button>}
-              
-              <Button variant="outlined" startIcon={<AccountBalanceIcon size= 'small' />} onClick={()=> { handlePaymentDialogOpen(o)}}>
-                  Payments
-              </Button>
-              <Button variant="outlined" startIcon={<ReceiptIcon size= 'small' />} onClick={()=> {fetchSalesOrderItems(o.sales_order_id), handleViewDialogOpen(o)}}>
-                  Invoice
-              </Button>
-          
+                </Button>
+              )}
 
+            {/* <Button
+              variant="outlined"
+              startIcon={<AccountBalanceIcon size="small" />}
+              onClick={() => {
+                handlePaymentDialogOpen(o);
+              }}
+            >
+              Payments
+            </Button> */}
+            <Button
+              variant="outlined"
+              startIcon={<ReceiptIcon size="small" />}
+              onClick={() => {
+                fetchSalesOrderItems(o.sales_order_id), handleViewDialogOpen(o);
+              }}
+            >
+              Invoice
+            </Button>
           </Box>
-           
-
-
         </CardActions>
       </Card>
     </Grid>

@@ -283,7 +283,7 @@ const InvoiceManagement = () => {
                       color="primary"
                       sx={{ mb: 1 }}
                     >
-                      ₹ {inv.total_invoice_amount?.toLocaleString()}
+                      ₹ {Math.round(Number(inv.total_invoice_amount || 0))?.toLocaleString()}
                     </Typography>
 
                     <Box mb={1}>

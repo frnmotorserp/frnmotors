@@ -35,6 +35,7 @@ import ViewDownloadInvoice from "../features/sales-order/ViewDownloadInvoice";
 import PaymentHistoryDialog from "../features/sales-order/PaymentHistoryDialog";
 import CancelSalesOrderDialog from "../features/sales-order/CancelSalesOrderDialog";
 import { generateEInvoiceJSONService } from "../services/salesService";
+import SalesOrdersView from "../features/sales-order/SalesOrdersView";
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -616,7 +617,7 @@ const SalesOrderManangement = () => {
             />
             <TextField
               size="small"
-              placeholder="Search Order No"
+              placeholder="Search Order"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
@@ -628,13 +629,23 @@ const SalesOrderManangement = () => {
           <Grid container spacing={3} mb={3}>
             {salesList
               ?.filter((o) => selectedTab === "ALL" || o.status === selectedTab)
-              ?.filter(
-                (o) =>
-                  !searchQuery ||
-                  o.sales_order_code
-                    ?.toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-              )
+              ?.filter((o) => {
+                if (!searchQuery) return true;
+
+                const query = searchQuery.toLowerCase();
+
+                // Check sales order code
+                const codeMatch = o.sales_order_code
+                  ?.toLowerCase()
+                  .includes(query);
+
+                // Check amount (as string)
+                const amountMatch = o.grand_total_rounded
+                  ?.toString()
+                  .includes(query);
+
+                return codeMatch || amountMatch;
+              })
               ?.filter(
                 (o) =>
                   !selectedDealer ||
@@ -696,7 +707,7 @@ const SalesOrderManangement = () => {
           open={paymentDialogOpen}
           onClose={handlePaymentDialogClose}
           salesOrderId={viewData?.sales_order_id}
-          orderAmount={viewData?.grand_total}
+          orderAmount={viewData?.grand_total_rounded}
           salesOrderCode={viewData?.sales_order_code}
           orderStatus={viewData?.status}
         />

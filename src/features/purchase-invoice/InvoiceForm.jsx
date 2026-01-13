@@ -392,7 +392,8 @@ const InvoiceForm = ({ invoice, onClose, onSaved, vendorList, productList }) => 
           <TextField fullWidth size="small" label="Total Tax" value={form.totalTaxAmount} disabled />
         </Grid>
         <Grid item xs={6}>
-          <TextField fullWidth size="small" label="Total Invoice" value={form.totalInvoiceAmount} disabled />
+          <TextField fullWidth size="small" label="Total Invoice" value={Math.round(Number(form.totalInvoiceAmount || 0))} disabled />
+          <Typography variant='caption'>Note: Determined by rounding: {form.totalInvoiceAmount} </Typography>
         </Grid>
 
         {/* REMARKS */}
