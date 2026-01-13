@@ -9,7 +9,9 @@ const OrderSummary = ({ orderData }) => {
     { label: "SGST", value: orderData.sgstAmount },
     { label: "IGST", value: orderData.igstAmount },
     { label: "Total Tax", value: orderData.totalTax },
-    { label: "Grand Total", value: orderData.grandTotal, highlight: true },
+    { label: "Total Before Round", value: orderData.grandTotal },
+    { label: "Round Difference", value: Math.round(Number(orderData.grandTotal || 0)) - Number(orderData.grandTotal || 0) },
+    { label: "Grand Total", value: Math.round(Number(orderData.grandTotal || 0)), highlight: true },
   ];
 
   return (

@@ -94,7 +94,7 @@ const POA4View = forwardRef(({ poData }, ref) => {
           </TableHead>
           <TableBody>
             {items?.map((item, idx) => (
-              <TableRow key={idx}>
+              <TableRow key={idx} >
                 <TableCell sx={tableCellStyle}>{idx + 1}</TableCell>
                 <TableCell sx={tableCellStyle}>{item.productName}</TableCell>
                 {/* <TableCell sx={tableCellStyle}>{item.hsn}</TableCell> */}
@@ -141,7 +141,7 @@ const POA4View = forwardRef(({ poData }, ref) => {
       </TableContainer>
 
       <Divider sx={{ my: 2 }} />
-      <Box display={'flex'} justifyContent={'space-between'}>
+      <Box display={'flex'}  justifyContent={'space-between'}>
         <Box sx={{ my: 2 }}>
 
 

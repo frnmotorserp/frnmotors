@@ -12,14 +12,17 @@ export async function listAllSalesOrdersService(startDate, endDate, partyId) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         startDate,
         endDate,
-        partyId // Can be customerId or dealerId depending on order_type
+        partyId, // Can be customerId or dealerId depending on order_type
       };
 
-      const response = await axiosPost('/sales/listAllSalesOrders', requestBody);
+      const response = await axiosPost(
+        "/sales/listAllSalesOrders",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -43,15 +46,18 @@ export async function saveOrUpdateSalesOrderService(orderData, items) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         ...orderData,
         items,
         userId: user?.userId,
-        createdBy: user?.userId
+        createdBy: user?.userId,
       };
 
-      const response = await axiosPost('/sales/saveOrUpdateSalesOrder', requestBody);
+      const response = await axiosPost(
+        "/sales/saveOrUpdateSalesOrder",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -75,11 +81,14 @@ export async function getSalesOrderSummaryService() {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
-        }
+          userName: user?.loginId,
+        },
       };
 
-      const response = await axiosPost('/sales/getSalesOrderSummary', requestBody);
+      const response = await axiosPost(
+        "/sales/getSalesOrderSummary",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -103,12 +112,15 @@ export async function getSalesOrderItemsService(salesOrderId) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
-        salesOrderId
+        salesOrderId,
       };
 
-      const response = await axiosPost('/sales/getSalesOrderItems', requestBody);
+      const response = await axiosPost(
+        "/sales/getSalesOrderItems",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -132,19 +144,24 @@ export async function updateSalesOrderStatusService(salesOrderId, newStatus) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         salesOrderId,
         status: newStatus,
-        updatedBy: user?.userId
+        updatedBy: user?.userId,
       };
 
-      const response = await axiosPost('/sales/updateSalesOrderStatus', requestBody);
+      const response = await axiosPost(
+        "/sales/updateSalesOrderStatus",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
       } else {
-        reject(response?.data?.message || "Failed to update sales order status");
+        reject(
+          response?.data?.message || "Failed to update sales order status"
+        );
       }
     } catch (error) {
       reject(error);
@@ -163,12 +180,15 @@ export async function getSalesOrdersByPartyService(partyId) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
-        partyId
+        partyId,
       };
 
-      const response = await axiosPost('/sales/getSalesOrdersByParty', requestBody);
+      const response = await axiosPost(
+        "/sales/getSalesOrdersByParty",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -180,7 +200,6 @@ export async function getSalesOrdersByPartyService(partyId) {
     }
   });
 }
-
 
 export async function listAllAvailableSalebleItems(locationId) {
   return new Promise(async (resolve, reject) => {
@@ -192,12 +211,15 @@ export async function listAllAvailableSalebleItems(locationId) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
-        locationId
+        locationId,
       };
 
-      const response = await axiosPost('/sales/listAllAvailableSalebleItems', requestBody);
+      const response = await axiosPost(
+        "/sales/listAllAvailableSalebleItems",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -209,8 +231,6 @@ export async function listAllAvailableSalebleItems(locationId) {
     }
   });
 }
-
-
 
 export async function saveOrUpdateOrderPaymentService(paymentData) {
   return new Promise(async (resolve, reject) => {
@@ -222,14 +242,17 @@ export async function saveOrUpdateOrderPaymentService(paymentData) {
         token,
         dataAccessDTO: {
           userId,
-          userName: loginId
+          userName: loginId,
         },
         ...paymentData,
         userId,
-        createdBy: userId
+        createdBy: userId,
       };
 
-      const response = await axiosPost('/sales/saveOrUpdateOrderPayment', requestBody);
+      const response = await axiosPost(
+        "/sales/saveOrUpdateOrderPayment",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -241,7 +264,6 @@ export async function saveOrUpdateOrderPaymentService(paymentData) {
     }
   });
 }
-
 
 export async function getPaymentsBySalesOrderIdService(salesOrderId) {
   return new Promise(async (resolve, reject) => {
@@ -253,12 +275,15 @@ export async function getPaymentsBySalesOrderIdService(salesOrderId) {
         token,
         dataAccessDTO: {
           userId,
-          userName: loginId
+          userName: loginId,
         },
-        salesOrderId
+        salesOrderId,
       };
 
-      const response = await axiosPost('/sales/getPaymentsBySalesOrderId', requestBody);
+      const response = await axiosPost(
+        "/sales/getPaymentsBySalesOrderId",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -270,7 +295,6 @@ export async function getPaymentsBySalesOrderIdService(salesOrderId) {
     }
   });
 }
-
 
 export async function deletePaymentService(paymentId, salesOrderId) {
   return new Promise(async (resolve, reject) => {
@@ -282,13 +306,13 @@ export async function deletePaymentService(paymentId, salesOrderId) {
         token,
         dataAccessDTO: {
           userId,
-          userName: loginId
+          userName: loginId,
         },
         paymentId,
-        salesOrderId
+        salesOrderId,
       };
 
-      const response = await axiosPost('/sales/deletePayment', requestBody);
+      const response = await axiosPost("/sales/deletePayment", requestBody);
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -301,9 +325,13 @@ export async function deletePaymentService(paymentId, salesOrderId) {
   });
 }
 
-
 // Get Sales Orders with Payment Details
-export async function getSalesOrdersWithPaymentsService(startDate, endDate, customerId, dealerId) {
+export async function getSalesOrdersWithPaymentsService(
+  startDate,
+  endDate,
+  customerId,
+  dealerId
+) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -314,16 +342,19 @@ export async function getSalesOrdersWithPaymentsService(startDate, endDate, cust
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         startDate,
         endDate,
         customerId: customerId || null,
-        dealerId: dealerId || null
+        dealerId: dealerId || null,
       };
-      console.log(requestBody)
+      console.log(requestBody);
 
-      const response = await axiosPost('/sales/getSalesOrdersWithPayments', requestBody);
+      const response = await axiosPost(
+        "/sales/getSalesOrdersWithPayments",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -335,8 +366,6 @@ export async function getSalesOrdersWithPaymentsService(startDate, endDate, cust
     }
   });
 }
-
-
 
 export async function getMonthlySalesReportService(year, month) {
   return new Promise(async (resolve, reject) => {
@@ -348,13 +377,16 @@ export async function getMonthlySalesReportService(year, month) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         year,
-        month
+        month,
       };
 
-      const response = await axiosPost('/sales/getMonthlySalesReport', requestBody);
+      const response = await axiosPost(
+        "/sales/getMonthlySalesReport",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -378,12 +410,179 @@ export async function getYearlySalesReportService(year) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
-        year
+        year,
       };
 
-      const response = await axiosPost('/sales/getYearlySalesReport', requestBody);
+      const response = await axiosPost(
+        "/sales/getYearlySalesReport",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Cancel Sales Order
+export async function cancelSalesOrderService(
+  salesOrderId,
+  cancellationReason
+) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        salesOrderId,
+        cancelledBy: userId,
+        cancellationReason: cancellationReason || null,
+      };
+
+      const response = await axiosPost("/sales/cancelSalesOrder", requestBody);
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to cancel sales order");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// Generate E-Invoice JSON
+export async function generateEInvoiceJSONService(salesOrderId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        salesOrderId,
+      };
+
+      const response = await axiosPost(
+        "/sales/generateEInvoiceJSON",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        // This will contain the generated JSON schema
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to generate E-Invoice JSON");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/* Party Wise Payment - New Requirement - 12-01-2026 */
+
+export async function createPartyPaymentService(paymentData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...paymentData,
+        createdBy: userId,
+      };
+
+      const response = await axiosPost(
+        "/sales/createPartyPaymentController",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/* Party Wise Payment Fetch - New Requirement - 12-01-2026 */
+
+export async function getPartyPaymentsService(filterData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...filterData, // partyType, customerId / dealerId, fromDate, toDate
+      };
+
+      const response = await axiosPost("/sales/getPartyPayments", requestBody);
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/* Year-wise Product Order Count - Customer / Dealer */
+
+export async function getYearWiseProductOrderCountService(filterData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...filterData, // partyType, customerId / dealerId, fromYear, toYear
+      };
+
+      const response = await axiosPost(
+        "/sales/getYearWiseProductOrderCount",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
@@ -397,9 +596,14 @@ export async function getYearlySalesReportService(year) {
 }
 
 
+/* =========================================================
+   Sales Party Discount Services
+   ========================================================= */
 
-// Cancel Sales Order
-export async function cancelSalesOrderService(salesOrderId, cancellationReason) {
+/**
+ * Create Sales Party Discount (Customer / Dealer)
+ */
+export async function createSalesPartyDiscountService(discountData) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -409,19 +613,55 @@ export async function cancelSalesOrderService(salesOrderId, cancellationReason) 
         token,
         dataAccessDTO: {
           userId,
-          userName: loginId
+          userName: loginId,
         },
-        salesOrderId,
-        cancelledBy: userId,
-        cancellationReason: cancellationReason || null
+        ...discountData, // partyType, customerId / dealerId, discountDate, discountAmount, reason
+        createdBy: userId,
       };
 
-      const response = await axiosPost('/sales/cancelSalesOrder', requestBody);
+      const response = await axiosPost(
+        "/sales/createSalesPartyDiscount",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
       } else {
-        reject(response?.data?.message || "Failed to cancel sales order");
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Fetch Party Discounts
+ */
+export async function getSalesPartyDiscountsService(filterData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...filterData, // partyType, customerId / dealerId, fromDate, toDate
+      };
+
+      const response = await axiosPost(
+        "/sales/getSalesPartyDiscounts",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
       }
     } catch (error) {
       reject(error);
@@ -430,30 +670,35 @@ export async function cancelSalesOrderService(salesOrderId, cancellationReason) 
 }
 
 
-
-// Generate E-Invoice JSON
-export async function generateEInvoiceJSONService(salesOrderId) {
+/**
+ * Delete Sales Party Discount
+ */
+export async function deleteSalesPartyDiscountService(
+  salesPartyDiscountId
+) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
-      const user = getUserDetailsObj();
+      const { userId, loginId } = getUserDetailsObj();
 
       const requestBody = {
         token,
         dataAccessDTO: {
-          userId: user?.userId,
-          userName: user?.loginId
+          userId,
+          userName: loginId,
         },
-        salesOrderId
+        salesPartyDiscountId,
       };
 
-      const response = await axiosPost('/sales/generateEInvoiceJSON', requestBody);
+      const response = await axiosPost(
+        "/sales/deleteSalesPartyDiscount",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
-        // This will contain the generated JSON schema
         resolve(response.data.responseObject);
       } else {
-        reject(response?.data?.message || "Failed to generate E-Invoice JSON");
+        reject(response?.data);
       }
     } catch (error) {
       reject(error);

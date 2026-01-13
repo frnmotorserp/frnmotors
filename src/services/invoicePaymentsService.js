@@ -2,7 +2,12 @@ import { axiosPost } from "./axios-config/requestClient";
 import { getJWTToken, getUserDetailsObj } from "../utils/loginUtil";
 
 // 1. Get Invoices by Vendor ID, PO ID and Date Range
-export async function getInvoicesByFilterService(startDate, endDate, vendorId = 0, poId = 0) {
+export async function getInvoicesByFilterService(
+  startDate,
+  endDate,
+  vendorId = 0,
+  poId = 0
+) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -12,12 +17,12 @@ export async function getInvoicesByFilterService(startDate, endDate, vendorId = 
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         startDate,
         endDate,
         vendorId,
-        poId
+        poId,
       };
 
       const response = await axiosPost("/invoice/listAllInvoices", requestBody);
@@ -27,7 +32,6 @@ export async function getInvoicesByFilterService(startDate, endDate, vendorId = 
       } else {
         reject(response?.data?.message || "Failed to fetch invoice list");
       }
-
     } catch (error) {
       reject(error);
     }
@@ -43,21 +47,22 @@ export async function getVendorInvoicesWithPaymentsFYService(vendorId = 0) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
-     
-        vendorId
- 
+
+        vendorId,
       };
 
-      const response = await axiosPost("/invoice/getVendorInvoicesWithPaymentsFY", requestBody);
+      const response = await axiosPost(
+        "/invoice/getVendorInvoicesWithPaymentsFY",
+        requestBody
+      );
 
       if (response?.status && response?.data?.status) {
         resolve(response.data.responseObject);
       } else {
         reject(response?.data?.message || "Failed to fetch invoice list");
       }
-
     } catch (error) {
       reject(error);
     }
@@ -79,21 +84,20 @@ export async function saveOrUpdateInvoiceService(invoiceDTO) {
         token,
         dataAccessDTO: {
           userId: user?.userId,
-          userName: user?.loginId
+          userName: user?.loginId,
         },
         ...invoiceDTO,
         createdBy: user?.userId,
-        userId: user?.userId
+        userId: user?.userId,
       };
 
-      const response = await axiosPost('/invoice/addInvoice', requestBody);
+      const response = await axiosPost("/invoice/addInvoice", requestBody);
 
       if (response?.status && response?.data?.success) {
         resolve(response.data.data); // invoice object returned
       } else {
         reject(response?.data?.message || "Failed to save invoice");
       }
-
     } catch (error) {
       reject(error);
     }
@@ -104,7 +108,13 @@ export async function saveOrUpdateInvoiceService(invoiceDTO) {
  * Sync invoice payments
  * If payments are added/updated/deleted, send full list for a given invoiceId
  */
-export async function syncInvoicePaymentsService(invoiceId, vendorId, totalAmountAsPerInvoice, paymentList = [], invoiceNumber) {
+export async function syncInvoicePaymentsService(
+  invoiceId,
+  vendorId,
+  totalAmountAsPerInvoice,
+  paymentList = [],
+  invoiceNumber
+) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -121,7 +131,7 @@ export async function syncInvoicePaymentsService(invoiceId, vendorId, totalAmoun
         paymentList,
         totalAmountAsPerInvoice,
         updatedBy: user?.userId,
-        invoiceNumber
+        invoiceNumber,
       };
 
       const response = await axiosPost("/invoice/managePayments", requestBody);
@@ -186,7 +196,10 @@ export async function getPaymentsGroupedByInvoiceService(poId) {
         poId,
       };
 
-      const response = await axiosPost("/invoice/getPaymentsGroupedByInvoice", requestBody);
+      const response = await axiosPost(
+        "/invoice/getPaymentsGroupedByInvoice",
+        requestBody
+      );
 
       if (response?.status && response?.data?.success) {
         resolve(response.data.data || []);
@@ -198,8 +211,6 @@ export async function getPaymentsGroupedByInvoiceService(poId) {
     }
   });
 }
-
-
 
 /**
  * Get invoice details with items by invoiceId
@@ -220,7 +231,10 @@ export async function getInvoiceWithItemsService(invoiceId) {
       };
 
       // API endpoint that should return invoice + item details
-      const response = await axiosPost("/invoice/getInvoiceWithItems", requestBody);
+      const response = await axiosPost(
+        "/invoice/getInvoiceWithItems",
+        requestBody
+      );
 
       if (response?.status && response?.data) {
         resolve(response.data.responseObject || {}); // return full invoice with items
@@ -232,8 +246,6 @@ export async function getInvoiceWithItemsService(invoiceId) {
     }
   });
 }
-
-
 
 /**
  * Add a new cash entry
@@ -332,14 +344,20 @@ export async function deleteCashEntryService(id) {
 /**
  * Get cash entries with optional date range
  */
-export async function getCashEntriesService(startDate, endDate, expenseCategoryId = 0) {
+export async function getCashEntriesService(
+  startDate,
+  endDate,
+  expenseCategoryId = 0
+) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
       const user = getUserDetailsObj();
 
       // API expects query params for startDate and endDate
-      const queryParams = `?startDate=${startDate || ""}&endDate=${endDate || ""}&expenseCategoryId=${expenseCategoryId}`;
+      const queryParams = `?startDate=${startDate || ""}&endDate=${
+        endDate || ""
+      }&expenseCategoryId=${expenseCategoryId}`;
 
       const requestBody = {
         token,
@@ -349,8 +367,11 @@ export async function getCashEntriesService(startDate, endDate, expenseCategoryI
         },
       };
 
-      const response = await axiosPost(`/invoice/listCashEntries${queryParams}`, requestBody);
-      console.log(response)
+      const response = await axiosPost(
+        `/invoice/listCashEntries${queryParams}`,
+        requestBody
+      );
+      console.log(response);
       if (response?.status && response?.data) {
         resolve(response.data || []);
       } else {
@@ -379,7 +400,10 @@ export async function getCashBalanceService() {
         },
       };
 
-      const response = await axiosPost("/invoice/fetchCashBalance", requestBody);
+      const response = await axiosPost(
+        "/invoice/fetchCashBalance",
+        requestBody
+      );
 
       if (response?.status && response?.data) {
         resolve(response?.data?.balance || 0);
@@ -391,7 +415,6 @@ export async function getCashBalanceService() {
     }
   });
 }
-
 
 /**
  * 1. Create a new bank transaction
@@ -406,18 +429,23 @@ export async function createBankTransactionService(transaction) {
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
+        userName: user?.loginId,
       },
       ...transaction,
-      created_by: user?.userId
+      created_by: user?.userId,
     };
 
-    const response = await axiosPost("/invoice/createBankTransaction", requestBody);
+    const response = await axiosPost(
+      "/invoice/createBankTransaction",
+      requestBody
+    );
     //console.log(response, response?.data?.success && response?.data?.data?.transaction_id)
     if (response?.data?.success && response?.data?.data?.transaction_id) {
       return response?.data?.data?.transaction_id;
     } else {
-      throw new Error(response?.data?.message || "Failed to create bank transaction");
+      throw new Error(
+        response?.data?.message || "Failed to create bank transaction"
+      );
     }
   } catch (error) {
     throw error;
@@ -430,7 +458,12 @@ export async function createBankTransactionService(transaction) {
  * @param {string} startDate - format YYYY-MM-DD
  * @param {string} endDate - format YYYY-MM-DD
  */
-export async function listBankTransactionsService(bankId, startDate = "", endDate = "", expenseCategoryId = 0) {
+export async function listBankTransactionsService(
+  bankId,
+  startDate = "",
+  endDate = "",
+  expenseCategoryId = 0
+) {
   try {
     const token = getJWTToken();
     const user = getUserDetailsObj();
@@ -439,20 +472,25 @@ export async function listBankTransactionsService(bankId, startDate = "", endDat
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
+        userName: user?.loginId,
       },
       bank_id: bankId,
       startDate,
       endDate,
-      expenseCategoryId
+      expenseCategoryId,
     };
 
-    const response = await axiosPost("/invoice/listBankTransactions", requestBody);
+    const response = await axiosPost(
+      "/invoice/listBankTransactions",
+      requestBody
+    );
 
     if (response?.status && response?.data) {
       return response.data || [];
     } else {
-      throw new Error(response?.data?.message || "Failed to fetch bank transactions");
+      throw new Error(
+        response?.data?.message || "Failed to fetch bank transactions"
+      );
     }
   } catch (error) {
     throw error;
@@ -472,9 +510,9 @@ export async function fetchBankBalanceService(bankId) {
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
+        userName: user?.loginId,
       },
-      bankId
+      bankId,
     };
 
     const response = await axiosPost("/invoice/fetchBankBalance", requestBody);
@@ -482,7 +520,9 @@ export async function fetchBankBalanceService(bankId) {
     if (response?.status && response?.data) {
       return response.data?.balance || 0;
     } else {
-      throw new Error(response?.data?.message || "Failed to fetch bank balance");
+      throw new Error(
+        response?.data?.message || "Failed to fetch bank balance"
+      );
     }
   } catch (error) {
     throw error;
@@ -497,8 +537,8 @@ export async function getAllBanks() {
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
-      }
+        userName: user?.loginId,
+      },
     };
 
     const response = await axiosPost("/invoice/getBanks", requestBody);
@@ -506,32 +546,39 @@ export async function getAllBanks() {
     if (response?.status && response?.data) {
       return response.data || [];
     } else {
-      throw new Error(response?.data?.message || "Failed to fetch bank balance");
+      throw new Error(
+        response?.data?.message || "Failed to fetch bank balance"
+      );
     }
   } catch (error) {
     throw error;
   }
 }
 
-
 // List All Expense Categories
 export const listAllExpenseCategories = async () => {
   try {
-     const token = getJWTToken();
+    const token = getJWTToken();
     const user = getUserDetailsObj();
 
     const requestBody = {
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
-      }
+        userName: user?.loginId,
+      },
     };
-    const response = await axiosPost("/invoice/listAllExpenseCategories", requestBody);
+    const response = await axiosPost(
+      "/invoice/listAllExpenseCategories",
+      requestBody
+    );
     if (response?.data?.status) {
       return response.data.responseObject || [];
     } else {
-      console.error("Error fetching expense categories:", response?.data?.message);
+      console.error(
+        "Error fetching expense categories:",
+        response?.data?.message
+      );
       return [];
     }
   } catch (error) {
@@ -543,22 +590,173 @@ export const listAllExpenseCategories = async () => {
 // Save or Update Expense Category
 export const saveOrUpdateExpenseCategory = async (payload) => {
   try {
-     const token = getJWTToken();
+    const token = getJWTToken();
     const user = getUserDetailsObj();
 
     const requestBody = {
       token,
       dataAccessDTO: {
         userId: user?.userId,
-        userName: user?.loginId
+        userName: user?.loginId,
       },
-       userId: user?.userId,
-      ...payload
+      userId: user?.userId,
+      ...payload,
     };
-    const response = await axiosPost("/invoice/saveOrUpdateExpenseCategory", requestBody);
+    const response = await axiosPost(
+      "/invoice/saveOrUpdateExpenseCategory",
+      requestBody
+    );
     return response.data;
   } catch (error) {
     console.error("Error saving/updating expense category:", error);
     throw error;
   }
 };
+
+/* Vendor Wise Payment - New Requirement - 12-01-2026 */
+
+export async function createVendorPaymentService(paymentData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...paymentData,
+        createdBy: userId,
+      };
+
+      const response = await axiosPost(
+        "/invoice/createVendorPayment",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/* Vendor Wise Payment - New Requirement - 12-01-2026 */
+
+export async function getVendorPaymentsService({
+  vendorId,
+  fromDate = "2020-01-01",
+  toDate = new Date().toISOString().slice(0, 10),
+}) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        vendorId,
+        fromDate,
+        toDate,
+      };
+
+      const response = await axiosPost(
+        "/invoice/getVendorPayments",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Create Vendor Discount
+ */
+export async function createVendorDiscountService(discountData) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        ...discountData,
+        createdBy: userId,
+      };
+
+      const response = await axiosPost(
+        "/invoice/createVendorDiscount",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Get Vendor Discounts
+ */
+export async function getVendorDiscountsService({
+  vendorId,
+  fromDate = "2020-01-01",
+  toDate = new Date().toISOString().slice(0, 10),
+}) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        vendorId,
+        fromDate,
+        toDate,
+      };
+
+      const response = await axiosPost(
+        "/invoice/getVendorDiscounts",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
