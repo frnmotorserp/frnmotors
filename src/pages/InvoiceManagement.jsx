@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
-import Alert from '@mui/material/Alert';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
+import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Autocomplete from "@mui/material/Autocomplete";
+import Alert from "@mui/material/Alert";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
+import Chip from "@mui/material/Chip";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
@@ -29,6 +29,7 @@ import { getAcceessMatrix } from "../utils/loginUtil";
 import { getAllProductsService } from "../services/productService";
 import InvoiceForm from "../features/purchase-invoice/InvoiceForm";
 import PaymentDialog from "../features/purchase-invoice/PaymentDialog";
+import ViewPurchaseInvoiceDialog from "../features/purchase-invoice/ViewPurchaseInvoiceDialog";
 
 // import PaymentDialog from '../features/invoice/PaymentDialog'; // Create this for payment tracking
 
@@ -413,8 +414,13 @@ const InvoiceManagement = () => {
               </Grid>
             ))}
         </Grid>
+        <ViewPurchaseInvoiceDialog
+          open={openPaymentDialog}
+          invoice={selectedInvoice}
+          onClose={() => setOpenPaymentDialog(false)}
+        />
 
-        {openPaymentDialog && (
+        {/*openPaymentDialog && (
           <Dialog
             open={openPaymentDialog}
             onClose={() => setOpenPaymentDialog(false)}
@@ -440,13 +446,13 @@ const InvoiceManagement = () => {
               </DialogContent>
             </DialogContent>
           </Dialog>
-        )}
+        )*/}
 
         {openInvoiceDialog && (
           <Dialog
             open={openInvoiceDialog}
-            onClose={handleDialogClose}
-            maxWidth="md"
+            //onClose={handleDialogClose}
+            maxWidth="xl"
             fullWidth
           >
             <DialogTitle>
