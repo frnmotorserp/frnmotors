@@ -22,8 +22,10 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Divider from "@mui/material/Divider";
 import BackupTableIcon from "@mui/icons-material/BackupTable";
+import DialogActions from "@mui/material/DialogActions";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-import DiscountIcon from '@mui/icons-material/Discount';
+import DiscountIcon from "@mui/icons-material/Discount";
 
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import CloseIcon from "@mui/icons-material/Close";
@@ -41,6 +43,8 @@ import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
 import History from "@mui/icons-material/History";
 import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
 import * as XLSX from "xlsx";
+
+import { softDeletePartyPaymentService } from "../../services/salesService";
 
 import dayjs from "dayjs";
 import {
@@ -78,10 +82,10 @@ const exportToExcel = (
     (sum, p) => sum + Number(p.payment_amount || 0),
     0
   );
-   const totalDiscount = discounts.reduce(
-                  (sum, d) => sum + Number(d.discount_amount || 0),
-                  0
-                );
+  const totalDiscount = discounts.reduce(
+    (sum, d) => sum + Number(d.discount_amount || 0),
+    0
+  );
   const totalRemaining = totalOrderValue - totalPaid - totalDiscount;
 
   const wsSummaryData = [
@@ -89,7 +93,13 @@ const exportToExcel = (
     [],
     ["Dealer/Customer Name", buyer],
     [],
-    ["Total Orders", "Total Order Value", "Total Paid", "Total Discount",  "Total Remaining"],
+    [
+      "Total Orders",
+      "Total Order Value",
+      "Total Paid",
+      "Total Discount",
+      "Total Remaining",
+    ],
     [
       totalOrders,
       totalOrderValue.toFixed(2),
@@ -115,9 +125,7 @@ const exportToExcel = (
   });
 
   /* ===================== DISCOUNTS ===================== */
-  const wsDiscountsData = [
-    ["Date", "Discount Amount", "Reason / Notes"],
-  ];
+  const wsDiscountsData = [["Date", "Discount Amount", "Reason / Notes"]];
 
   discounts.forEach((d) => {
     wsDiscountsData.push([
@@ -284,6 +292,8 @@ export default function OrderPaymentHistoryDialog({
 
   const [productSummary, setProductSummary] = useState([]);
   const [productSummaryLoading, setProductSummaryLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const [openCreatePartyPaymentDialog, setOpenCreatePartyPaymentDialog] =
     useState(false);
@@ -300,20 +310,20 @@ export default function OrderPaymentHistoryDialog({
   const [discountFetchLoading, setDiscountFetchLoading] = useState(false);
 
   const resetAllStates = () => {
-  setLoading(false);
-  setOrders([]);
-  setPayments([]);
-  setDiscounts([]);
-  setPaymentSearch("");
-  setActiveTab(0);
+    setLoading(false);
+    setOrders([]);
+    setPayments([]);
+    setDiscounts([]);
+    setPaymentSearch("");
+    setActiveTab(0);
 
-  setProductSummary([]);
-  setPivotYears([]);
-  setPivotRows([]);
+    setProductSummary([]);
+    setPivotYears([]);
+    setPivotRows([]);
 
-  setOpenCreatePartyPaymentDialog(false);
-  setOpenCreatePartyDiscountDialog(false);
-};
+    setOpenCreatePartyPaymentDialog(false);
+    setOpenCreatePartyDiscountDialog(false);
+  };
 
   const fetchPartyDiscounts = async () => {
     try {
@@ -564,10 +574,12 @@ export default function OrderPaymentHistoryDialog({
           </Button>
         </Box>
 
-        <IconButton onClick={() => {
-          resetAllStates()
-          onClose()
-          }}>
+        <IconButton
+          onClick={() => {
+            resetAllStates();
+            onClose();
+          }}
+        >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
@@ -633,10 +645,7 @@ export default function OrderPaymentHistoryDialog({
                     label: "Total Discount",
                     value: `₹${totalDiscount.toLocaleString()}`,
                     icon: (
-                      <DiscountIcon
-                        fontSize="large"
-                        sx={{ color: "orange" }}
-                      />
+                      <DiscountIcon fontSize="large" sx={{ color: "orange" }} />
                     ),
                     color: "orange",
                   },
@@ -823,6 +832,9 @@ export default function OrderPaymentHistoryDialog({
                             <TableCell>
                               <b>Notes</b>
                             </TableCell>
+                            <TableCell align="center">
+                              <b>Action</b>
+                            </TableCell>
                           </TableRow>
                         </TableHead>
 
@@ -862,6 +874,21 @@ export default function OrderPaymentHistoryDialog({
                               </TableCell>
 
                               <TableCell>{p.notes || "-"}</TableCell>
+                              <TableCell align="center">
+                                <IconButton
+                                  color="error"
+                                  size="small"
+                                  onClick={() => {
+                                    setDeleteTarget({
+                                      type: "PAYMENT",
+                                      id: p.party_payment_id,
+                                    });
+                                    setConfirmOpen(true);
+                                  }}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1227,7 +1254,6 @@ export default function OrderPaymentHistoryDialog({
         partyId={partyType === "DEALER" ? dealerId : customerId}
         buyerName={buyerName}
         onClose={() => {
-          
           setOpenCreatePartyPaymentDialog(false);
         }}
         fetchPartyPayments={fetchPartyPayments}
@@ -1240,7 +1266,45 @@ export default function OrderPaymentHistoryDialog({
         onClose={() => setOpenCreatePartyDiscountDialog(false)}
         fetchPartyDiscounts={fetchPartyDiscounts}
       />
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
 
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this record? This action cannot be
+            undone.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              showLoader();
+              try {
+                if (deleteTarget?.type === "PAYMENT") {
+                  await softDeletePartyPaymentService(deleteTarget.id);
+                  hideLoader();
+                  fetchPartyPayments();
+                }
+
+                showSnackbar("Deleted successfully", "success");
+              } catch (err) {
+                hideLoader();
+                showSnackbar("Delete failed", "error");
+              } finally {
+                setConfirmOpen(false);
+                setDeleteTarget(null);
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }
