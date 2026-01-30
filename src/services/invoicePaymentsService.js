@@ -836,3 +836,42 @@ export async function softDeleteInvoiceService(invoiceId) {
     }
   });
 }
+
+/**
+ * Soft Delete Cashbook Entry
+ */
+export async function softDeleteCashbookEntryService(cashbookId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      if (!cashbookId) {
+        reject("Cashbook ID is required");
+        return;
+      }
+
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        cashbookId,
+      };
+
+      const response = await axiosPost(
+        "/invoice/softDeleteCashbook",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to delete cashbook entry");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

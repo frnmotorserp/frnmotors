@@ -183,8 +183,7 @@ const SalesOrderCard = ({
                 E-Invoice JSON
               </Button>
             )}
-            {o.status !== "CANCELLED" &&
-              dayjs().isBefore(dayjs(o.created_at).add(3, "day")) && (
+            {o.status !== "CANCELLED" && (
                 <Button
                   variant="outlined"
                   color="error"
