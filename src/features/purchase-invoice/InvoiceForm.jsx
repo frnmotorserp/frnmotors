@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Card from '@mui/material/Card';
-import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
+import Card from "@mui/material/Card";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import dayjs from "dayjs";
 import { saveOrUpdateInvoiceService } from "../../services/invoicePaymentsService";
 import { useUI } from "../../context/UIContext";
@@ -130,6 +130,10 @@ const InvoiceForm = ({
       (sum, i) => sum + (parseFloat(i.taxable_value) || 0),
       0
     );
+    // const discountTotal = form.items.reduce(
+    //   (sum, i) => sum + (parseFloat(i.discount) || 0),
+    //   0
+    // );
     const cgst = form.items.reduce(
       (sum, i) => sum + (parseFloat(i.cgst_amount) || 0),
       0
@@ -547,6 +551,83 @@ const InvoiceForm = ({
             value={form.remarks}
             onChange={(e) => handleChange("remarks", e.target.value)}
           />
+        </Grid>
+        {/* SUMMARY */}
+        <Grid item xs={12}>
+          <Box
+            sx={{
+              mt: 3,
+              p: 3,
+              borderRadius: 3,
+              background: "linear-gradient(135deg, #f5f7fa, #e4ecf7)",
+              boxShadow: 3,
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 700, mb: 2, color: "primary.main" }}
+            >
+              Invoice Summary
+            </Typography>
+
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography color="text.secondary">Total Before Tax</Typography>
+              </Grid>
+              <Grid item xs={6} textAlign="right">
+                <Typography fontWeight={600}>₹ {form.invoiceAmount}</Typography>
+              </Grid>
+
+              <Grid item xs={6}>
+                <Typography color="text.secondary">CGST</Typography>
+              </Grid>
+              <Grid item xs={6} textAlign="right">
+                <Typography fontWeight={600}>₹ {form.cgstAmount}</Typography>
+              </Grid>
+
+              <Grid item xs={6}>
+                <Typography color="text.secondary">SGST</Typography>
+              </Grid>
+              <Grid item xs={6} textAlign="right">
+                <Typography fontWeight={600}>₹ {form.sgstAmount}</Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography color="text.secondary">IGST</Typography>
+              </Grid>
+              <Grid item xs={6} textAlign="right">
+                <Typography fontWeight={600}>₹ {form.igstAmount}</Typography>
+              </Grid>
+
+              <Grid item xs={6}>
+                <Typography color="text.secondary">Total Tax</Typography>
+              </Grid>
+              <Grid item xs={6} textAlign="right">
+                <Typography fontWeight={700}>
+                  ₹ {form.totalTaxAmount}
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    mt: 1,
+                    p: 2,
+                    borderRadius: 2,
+                    backgroundColor: "primary.main",
+                    color: "#fff",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography fontWeight={700}>Grand Total</Typography>
+                  <Typography fontSize={20} fontWeight={800}>
+                    ₹ {Math.round(Number(form.totalInvoiceAmount || 0))}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Box>
         </Grid>
 
         {/* ACTION */}

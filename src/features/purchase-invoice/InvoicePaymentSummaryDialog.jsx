@@ -1,27 +1,30 @@
 // InvoicePaymentSummaryDialog with Tabs (Payment / Discount / Order)
 
 import React, { useEffect, useMemo, useState } from "react";
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Paper from '@mui/material/Paper';
-import Grid from '@mui/material/Grid';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TableBody from '@mui/material/TableBody';
-import Divider from '@mui/material/Divider';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Chip from '@mui/material/Chip';
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import IconButton from "@mui/material/IconButton";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Paper from "@mui/material/Paper";
+import Grid from "@mui/material/Grid";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import TableBody from "@mui/material/TableBody";
+import Divider from "@mui/material/Divider";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Chip from "@mui/material/Chip";
 import VendorPaymentFormDialog from "../vendor-payment-purchase/VendorPaymentFormDialog";
 import VendorDiscountFormDialog from "../vendor-payment-purchase/PartyDiscountFormDialog";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import LinearProgress from "@mui/material/LinearProgress";
+import { deleteVendorPaymentService } from "../../services/invoicePaymentsService";
 
 import CloseIcon from "@mui/icons-material/Close";
 import PaymentIcon from "@mui/icons-material/Payment";
@@ -37,6 +40,7 @@ import BackupTableIcon from "@mui/icons-material/BackupTable";
 import { getAllBanks } from "../../services/invoicePaymentsService";
 import { getVendorPaymentsService } from "../../services/invoicePaymentsService";
 import { getVendorDiscountsService } from "../../services/invoicePaymentsService";
+import { useUI } from "../../context/UIContext";
 
 import dayjs from "dayjs";
 import * as XLSX from "xlsx";
@@ -104,6 +108,11 @@ export default function InvoicePaymentSummaryDialog({
   const [discounts, setDiscounts] = useState([]);
   const [loadingDiscounts, setLoadingDiscounts] = useState(false);
 
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const { showSnackbar } = useUI();
+
   useEffect(() => {
     if (!open) {
       setActiveTab(0);
@@ -163,6 +172,31 @@ export default function InvoicePaymentSummaryDialog({
       .finally(() => {
         //hideLoader();
       });
+  };
+
+  const handleDeletePayment = (payment) => {
+    setDeleteTarget(payment);
+  };
+
+  const confirmDeletePayment = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setDeleting(true);
+
+      const deleteStatus = await deleteVendorPaymentService(
+        deleteTarget.vendor_payment_id
+      );
+      console.log(deleteStatus);
+      showSnackbar("Payment deleted successfully", "success");
+
+      setDeleteTarget(null);
+      fetchVendorPayments();
+    } catch (err) {
+      showSnackbar(err?.message || "Failed to delete vendor payment", "error");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   /* ===================== SUMMARY ===================== */
@@ -445,6 +479,7 @@ export default function InvoicePaymentSummaryDialog({
                       <TableCell>Reference</TableCell>
                       <TableCell align="right">Amount</TableCell>
                       <TableCell>Notes</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -471,6 +506,15 @@ export default function InvoicePaymentSummaryDialog({
                           ₹{Number(p.payment_amount).toLocaleString()}
                         </TableCell>
                         <TableCell>{p.payment_notes || "-"}</TableCell>
+                        <TableCell>
+                          <IconButton
+                            color="error"
+                            size="small"
+                            onClick={() => handleDeletePayment(p)}
+                          >
+                            <DeleteOutlineIcon />
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -576,6 +620,61 @@ export default function InvoicePaymentSummaryDialog({
         vendorName={vendorName}
         fetchVendorDiscounts={fetchVendorDiscounts}
       />
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onClose={() => !deleting && setDeleteTarget(null)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Delete Payment</DialogTitle>
+
+        <DialogContent dividers>
+          {deleting && <LinearProgress color="error" />}
+          <Typography gutterBottom>
+            Are you sure you want to delete this payment?
+          </Typography>
+
+          {deleteTarget && (
+            <Box mt={1}>
+              <Typography variant="body2">
+                <strong>Amount:</strong> ₹
+                {Number(deleteTarget.payment_amount).toLocaleString()}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Date:</strong>{" "}
+                {dayjs(deleteTarget.payment_date).format("DD-MM-YYYY")}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Method:</strong> {deleteTarget.payment_method}
+              </Typography>
+            </Box>
+          )}
+
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            mt={2}
+            display="block"
+          >
+            This action will reverse the linked cash/bank entry if any.
+          </Typography>
+        </DialogContent>
+
+        <Box display="flex" justifyContent="flex-end" gap={1} p={2}>
+          <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>
+            Cancel
+          </Button>
+
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmDeletePayment}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting..." : "Delete"}
+          </Button>
+        </Box>
+      </Dialog>
     </Dialog>
   );
 }

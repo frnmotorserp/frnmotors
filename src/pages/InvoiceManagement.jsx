@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
-import Autocomplete from '@mui/material/Autocomplete';
-import Alert from '@mui/material/Alert';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardActions from '@mui/material/CardActions';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
+import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import Autocomplete from "@mui/material/Autocomplete";
+import Alert from "@mui/material/Alert";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardActions from "@mui/material/CardActions";
+import Chip from "@mui/material/Chip";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
@@ -29,6 +29,8 @@ import { getAcceessMatrix } from "../utils/loginUtil";
 import { getAllProductsService } from "../services/productService";
 import InvoiceForm from "../features/purchase-invoice/InvoiceForm";
 import PaymentDialog from "../features/purchase-invoice/PaymentDialog";
+import ViewPurchaseInvoiceDialog from "../features/purchase-invoice/ViewPurchaseInvoiceDialog";
+import { softDeleteInvoiceService } from "../services/invoicePaymentsService";
 
 // import PaymentDialog from '../features/invoice/PaymentDialog'; // Create this for payment tracking
 
@@ -56,6 +58,9 @@ const InvoiceManagement = () => {
   const [mode, setMode] = useState("create");
   const [productList, setProductList] = useState([]);
 
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
+
   useEffect(() => {
     fetchVendors();
     const access = getAcceessMatrix(
@@ -64,6 +69,28 @@ const InvoiceManagement = () => {
     );
     setAccessMatrix(access);
   }, []);
+
+  const handleDeleteClick = (invoice) => {
+    setInvoiceToDelete(invoice);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!invoiceToDelete?.invoice_id) return;
+
+    try {
+      showLoader();
+      await softDeleteInvoiceService(invoiceToDelete.invoice_id);
+      showSnackbar("Invoice deleted successfully", "success");
+      setOpenDeleteDialog(false);
+      setInvoiceToDelete(null);
+      fetchInvoices(); // refresh list
+    } catch (err) {
+      showSnackbar(err?.message || "Failed to delete invoice", "error");
+    } finally {
+      hideLoader();
+    }
+  };
 
   const handleDialogOpen = (invoice = null) => {
     setEditingInvoice(invoice); // null for Add, invoice for Edit
@@ -386,6 +413,18 @@ const InvoiceManagement = () => {
                         Edit
                       </Button>
                     )}
+                    {accessMatrix?.create && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<CloseIcon />}
+                        onClick={() => handleDeleteClick(inv)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+
                     {/* <Button
                       size="small"
                       variant="contained"
@@ -413,8 +452,13 @@ const InvoiceManagement = () => {
               </Grid>
             ))}
         </Grid>
+        <ViewPurchaseInvoiceDialog
+          open={openPaymentDialog}
+          invoice={selectedInvoice}
+          onClose={() => setOpenPaymentDialog(false)}
+        />
 
-        {openPaymentDialog && (
+        {/*openPaymentDialog && (
           <Dialog
             open={openPaymentDialog}
             onClose={() => setOpenPaymentDialog(false)}
@@ -440,13 +484,13 @@ const InvoiceManagement = () => {
               </DialogContent>
             </DialogContent>
           </Dialog>
-        )}
+        )*/}
 
         {openInvoiceDialog && (
           <Dialog
             open={openInvoiceDialog}
-            onClose={handleDialogClose}
-            maxWidth="md"
+            //onClose={handleDialogClose}
+            maxWidth="xl"
             fullWidth
           >
             <DialogTitle>
@@ -473,6 +517,45 @@ const InvoiceManagement = () => {
           </Dialog>
         )}
       </Box>
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          Confirm Delete
+          <IconButton
+            onClick={() => setOpenDeleteDialog(false)}
+            sx={{ position: "absolute", right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Typography>
+            Are you sure you want to delete invoice{" "}
+            <strong>{invoiceToDelete?.invoice_number}</strong>?
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            This action is reversible only from database.
+          </Typography>
+        </DialogContent>
+
+        <CardActions sx={{ justifyContent: "flex-end", p: 2 }}>
+          <Button variant="outlined" onClick={() => setOpenDeleteDialog(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleConfirmDelete}
+          >
+            Delete
+          </Button>
+        </CardActions>
+      </Dialog>
     </PageWrapper>
   );
 };

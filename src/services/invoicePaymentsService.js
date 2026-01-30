@@ -760,3 +760,79 @@ export async function getVendorDiscountsService({
     }
   });
 }
+
+/**
+ * Soft Delete Vendor Payment
+ * - Reverses linked bank/cash entry if exists
+ * - Works for legacy data where bank/cash entry may be NULL
+ */
+export async function deleteVendorPaymentService(vendorPaymentId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        vendorPaymentId,
+      };
+
+      const response = await axiosPost(
+        "/invoice/softDeleteVendorPayment",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to delete vendor payment");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/**
+ * Soft Delete Invoice
+ * @param {number} invoiceId
+ */
+export async function softDeleteInvoiceService(invoiceId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const user = getUserDetailsObj();
+
+      if (!invoiceId) {
+        reject("Invoice ID is required");
+        return;
+      }
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId: user?.userId,
+          userName: user?.loginId,
+        },
+        invoiceId,
+      };
+
+      const response = await axiosPost(
+        "/invoice/softDeleteInvoice",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data?.message || "Failed to delete invoice");
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

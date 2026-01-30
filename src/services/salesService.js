@@ -595,7 +595,6 @@ export async function getYearWiseProductOrderCountService(filterData) {
   });
 }
 
-
 /* =========================================================
    Sales Party Discount Services
    ========================================================= */
@@ -669,13 +668,10 @@ export async function getSalesPartyDiscountsService(filterData) {
   });
 }
 
-
 /**
  * Delete Sales Party Discount
  */
-export async function deleteSalesPartyDiscountService(
-  salesPartyDiscountId
-) {
+export async function deleteSalesPartyDiscountService(salesPartyDiscountId) {
   return new Promise(async (resolve, reject) => {
     try {
       const token = getJWTToken();
@@ -692,6 +688,44 @@ export async function deleteSalesPartyDiscountService(
 
       const response = await axiosPost(
         "/sales/deleteSalesPartyDiscount",
+        requestBody
+      );
+
+      if (response?.status && response?.data?.status) {
+        resolve(response.data.responseObject);
+      } else {
+        reject(response?.data);
+      }
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+/* =========================================================
+   Party Wise Payment - Soft Delete
+   ========================================================= */
+
+/**
+ * Soft Delete Party Payment (Customer / Dealer)
+ */
+export async function softDeletePartyPaymentService(partyPaymentId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const token = getJWTToken();
+      const { userId, loginId } = getUserDetailsObj();
+
+      const requestBody = {
+        token,
+        dataAccessDTO: {
+          userId,
+          userName: loginId,
+        },
+        partyPaymentId,
+      };
+
+      const response = await axiosPost(
+        "/sales/softDeletePartyPayment",
         requestBody
       );
 
