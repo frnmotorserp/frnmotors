@@ -27,6 +27,7 @@ const GRNForm = ({
   vendorList,
   locationList = [],
   mode,
+  companyDetails
 }) => {
   const printRef = useRef(null);
   const { showSnackbar, showLoader, hideLoader } = useUI();
@@ -361,7 +362,7 @@ const GRNForm = ({
           </Fab>
           <Box sx={{ overflowX: 'auto', width: '100%' }}>
             <Box sx={{ width: 'fit-content', mx: 'auto' }}>
-              <GRNA4View ref={printRef} grnData={viewData} />
+              <GRNA4View ref={printRef} grnData={viewData}  companyDetails={companyDetails} />
             </Box>
           </Box>
         </Box>
