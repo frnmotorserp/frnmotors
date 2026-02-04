@@ -148,8 +148,9 @@ export default function InventoryIssueDialog({
     }
 
     const issueMoreThanAvailableQty = items.filter(
-      (it) => it?.quantity > it?.product?.quantity
+      (it) => Number(it?.quantity) > Number(it?.product?.quantity)
     );
+    console.log(items)
     if (issueMoreThanAvailableQty?.length > 0) {
       showSnackbar(
         `For some items entered issued quantity is more than available quantity - ${issueMoreThanAvailableQty?.map(

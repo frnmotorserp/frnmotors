@@ -79,7 +79,7 @@ const getFormattedLocationAddress = (addr) => {
 
 
 
-const CreateOrEditPOForm = ({ mode = '', editData, onClose, onSuccess, vendorList, locationList, productList, filters }) => {
+const CreateOrEditPOForm = ({ mode = '', editData, onClose, onSuccess, vendorList, locationList, productList, filters, companyDetails= null }) => {
   const printRef = useRef(null);
   const [formData, setFormData] = useState({
     poId: '',
@@ -478,7 +478,7 @@ const CreateOrEditPOForm = ({ mode = '', editData, onClose, onSuccess, vendorLis
           </Fab>
           <Box sx={{ overflowX: 'auto', width: '100%' }}>
             <Box sx={{ width: 'fit-content', mx: 'auto' }}>
-              <POA4View ref={printRef} poData={poViewData} />
+              <POA4View ref={printRef} poData={poViewData} companyDetails={companyDetails} />
             </Box>
           </Box>
         </Box>
